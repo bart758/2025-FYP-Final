@@ -34,7 +34,7 @@ def main(csv_path, save_path):
     print("Confusion Matrix:\n", cm)
 
     # write test results to CSV.
-    result_df = data.loc[X_test.index, ["filename"]].copy()
+    result_df = data_df.loc[x_test.index, ["filename"]].copy()
     result_df['true_label'] = y_test.values
     result_df['predicted_label'] = y_pred
     result_df.to_csv(save_path, index=False)
