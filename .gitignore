@@ -169,3 +169,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Ignore Images in data file
+data/
+
+
+# Ignore .DS_Store files for Mac users
+.DS_Store
+
+# Ignore Images in result folder
+result/*.jpg
+result/*.jpeg
