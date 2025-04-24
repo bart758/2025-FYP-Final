@@ -237,6 +237,7 @@ def crop(mask):
         x_lims = [mid - x_dist, mid+x_dist]
         return mask[y_lims[0]:y_lims[1], x_lims[0]:x_lims[1]]
 
+"""Finds the horizontal midpoint of an image in terms of pixel intensity distribution."""
 def find_midpoint_v4(mask):
         summed = np.sum(mask, axis=0)
         half_sum = np.sum(summed) / 2
@@ -244,7 +245,9 @@ def find_midpoint_v4(mask):
             if n > half_sum:
                 return i
   
-
+"""Cuts empty / excess borders. Isolates the area of interest. Removes all borders 
+(rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
+and cutting it."""
 def cut_mask(mask):
     
     col_sums = np.sum(mask, axis=0)
@@ -268,6 +271,11 @@ def cut_mask(mask):
     cut_mask_ = mask[row_min:row_max+1, col_min:col_max+1]
 
     return cut_mask_
+
+"""Almost the same as the previous function. This time you pass an image and a mask.
+ The function masks the active columns / rows based on the mask and then crops the 
+ image based on that. So the returned image will be a rectangle just zoomed in on some 
+ part based on the mask."""
 
 def cut_im_by_mask(image, mask):
     
@@ -294,11 +302,22 @@ def cut_im_by_mask(image, mask):
 
     return cut_image
 
+"""Literally just returns the geometrical midpoint of the image in the format [row col]"""
 def find_midpoint_v1(image):
     
     row_mid = image.shape[0] / 2
     col_mid = image.shape[1] / 2
     return row_mid, col_mid
+
+"""Measures the asymmetry of an image. The function splits the image into 4 sections 
+based on the midpoint. Not like a coordinate plane with 4 quadrants. The parts are not 
+unique. It splits it into upper lower halves and right left halves. Then flips lower 
+and right halves. Then it uses xor to compare the left with flipped right and upper 
+with flipped lower. Creating arrays which have values of 1 where compared halves are 
+not the same. Then it calculates the actual score by summing all the not symmetrical 
+pixels and dividing their sum by 2 times the sum of all the pixels of the original mask. 
+(the denominator will always be larger than the numerator )
+"""
 
 def asymmetry(mask):
     

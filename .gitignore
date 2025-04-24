@@ -180,3 +180,4 @@ data/
 # Ignore Images in result folder
 result/*.jpg
 result/*.jpeg
+util/test.py
