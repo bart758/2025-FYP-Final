@@ -396,7 +396,11 @@ def rotation_asymmetry(mask, n: int):
 
     return asymmetry_scores
 
+
 def mean_asymmetry(mask, rotations = 30):
+
+    ''' This feature rotates the image for the amount of rotations by given the input and quantifies how symmetric the mask is at each rotation.
+     It them averages the symmetry scores, returning a single float between 0 - indicating full symmetry, to 1 - indicating no symmetry at all'''
     
     asymmetry_scores = rotation_asymmetry(mask, rotations)
     mean_score = sum(asymmetry_scores.values()) / len(asymmetry_scores)
@@ -404,6 +408,9 @@ def mean_asymmetry(mask, rotations = 30):
     return mean_score          
 
 def best_asymmetry(mask, rotations = 30):
+
+    '''This feature rotates the image for the amount of rotations given by the input and measures the asymmetry score for each rotation. 
+    The function then returns the asymmetry score at the rotation in which the asymmetry score is at a minimum (closest to 0). '''
     
     asymmetry_scores = rotation_asymmetry(mask, rotations)
     best_score = min(asymmetry_scores.values())
@@ -412,13 +419,21 @@ def best_asymmetry(mask, rotations = 30):
 
 def worst_asymmetry(mask, rotations = 30):
     
+    ''' This feature rotates the image for the amount of rotations given by the input and measures the asymmetry score for each rotation. 
+    The function then returns the asymmetry score at the rotation in which the asymmetry score is at a maximum (closest to 1). '''
     asymmetry_scores = rotation_asymmetry(mask, rotations)
     worst_score = max(asymmetry_scores.values())
 
     return worst_score  
 
 def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
-    
+        
+    '''The SLIC function divides the grayscale mask into n different segments based on the input, each segment treated as a superpixel instead of treating each
+    single pixel individually, which reduces complexity. The function adjusts the shape and color balance of each superpixel based on the compactness input (
+    the higher the value, the more compact and less flexible each superpixel shape is). Each superpixel is then given an integer label and the function returns 
+    a Numpy array that acts as a map for the superpixels, each value in the array being the label of that superpixel. This allows analysis of larger regions of the 
+    image separately, instead of single pixels.'''
+
     slic_segments = slic(image,
                     n_segments = n_segments,
                     compactness = compactness,
@@ -426,11 +441,15 @@ def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
                     mask = mask,
                     start_label = 1,
                     channel_axis = 2)
-    
+
     return slic_segments
 
 def get_rgb_means(image, slic_segments):
     
+    '''This feature takes an array representing a RGB image and a NumPy array with the labels for each superpixel (the output of the slic_segmentation feature).
+     For each superpixel, the feature calculates the mean of the red, green, and blue pixels and adds these values to to inner array representing that superpixel.
+    The values for each color range between 0 to 255, where 0 is black and 255 is max intensity (brightness) of that color.'''
+      
     max_segment_id = np.unique(slic_segments)[-1]
 
     rgb_means = []
@@ -447,6 +466,9 @@ def get_rgb_means(image, slic_segments):
 
 def get_hsv_means(image, slic_segments):
     
+    '''This feature measures the mean hue, saturation, and value (brightness) of each region in the image (each superpixel). It creates a list of arrays 
+    and inserts the HSV means into the inner array which represents the superpixel, and then returns that list.'''
+
     hsv_image = rgb2hsv(image)
 
     max_segment_id = np.unique(slic_segments)[-1]
@@ -466,7 +488,7 @@ def get_hsv_means(image, slic_segments):
         hsv_means.append(hsv_mean)
         
     return hsv_means
-
+    
 def rgb_var(image, slic_segments):
     """Takes rgb image data and slic_segments, which is the same size as the image and for each pixel has a value for which segmnet/superpixel 
     the pixel belongs to by similarity. And returns tuple (red_var, green_var, blue_var), variance."""
