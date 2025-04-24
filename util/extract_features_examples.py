@@ -343,6 +343,12 @@ def asymmetry(mask):
 
     return round(asymmetry_score, 4)
 
+"""Measures the rotational asymmetry. The integer in the input is the amount of 
+rotations within 90 degrees. It will always rotate the image to 90 degrees in the end,
+ but the input n determines the amount of steps in which it will do it. Basically, 
+ using the two previous functions, this one calculates asymmetry for each rotation 
+ then returns a dictionary"""
+
 def rotation_asymmetry(mask, n: int):
 
     asymmetry_scores = {}
