@@ -130,6 +130,10 @@ def measure_irregular_pigmentation(image):
 
 
 def measure_regression(image):
+
+    """To measure the number of pixels in the input image that fall within a specific light gray to white
+    color range in the HSV color space. This can be useful for quantifying certain regions in an image
+    based on color, such as detecting highlights, surfaces, or regression areas that are light in color."""
    
     hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_color = np.array([0, 0, 150])
@@ -143,6 +147,11 @@ def measure_regression(image):
 
 
 def get_compactness(mask):
+
+    """ To calculate the compactness of a binary region in an image, which is a measure of how closely packed
+    or circular the shape is. A value closer to 1 suggests a shape that is more circular, while higher values
+    indicate more irregular or elongated shapes."""
+
     # mask = color.rgb2gray(mask)
     area = np.sum(mask)
 
@@ -153,6 +162,12 @@ def get_compactness(mask):
     return perimeter**2 / (4 * np.pi * area)
 
 def get_asymmetry(mask):
+
+    """To quantify the asymmetry of a binary shape. The mask is rotated multiple times (in 30° increments), and for each
+    rotation, the function compares the shape with its horizontally flipped version using a logical XOR operation.
+    The higher the score, the more asymmetric the shape is, which can be useful in tasks like medical image analysis
+    (e.g., detecting irregular lesions)."""
+
     # mask = color.rgb2gray(mask)
     scores = []
     for _ in range(6):
@@ -163,6 +178,12 @@ def get_asymmetry(mask):
     return sum(scores) / len(scores)
 
 def get_multicolor_rate(im, mask, n):
+
+    """To quantify the degree of color diversity within a specified region of an image. It resizes the image and mask
+    for efficiency, extracts only the pixels within the mask, clusters them into n color groups, and computes the maximum 
+    Euclidean distance between the most prominent color centers. Useful in image analysis tasks like skin lesion detection,
+    artistic analysis, or visual complexity assessment."""
+
     # mask = color.rgb2gray(mask)
     im = resize(im, (im.shape[0] // 4, im.shape[1] // 4), anti_aliasing=True)
     mask = resize(
@@ -205,6 +226,12 @@ def get_multicolor_rate(im, mask, n):
     return np.max(dist_list)
 
 def get_com_col(cluster, centroids):
+
+    """To analyze the output of KMeans clustering on image pixels and identify the most significant colors
+    based on their frequency. It builds a histogram of color cluster frequencies, normalizes it, and collects
+    colors that occur in more than 8% of the pixels. Optionally, it also creates a color bar image (rect) to
+    visually represent the distribution of dominant colors—useful for debugging or visualization, though it's not returned."""
+
     com_col_list = []
     labels = np.arange(0, len(np.unique(cluster.labels_)) + 1)
     (hist, _) = np.histogram(cluster.labels_, bins=labels)
@@ -229,13 +256,18 @@ def get_com_col(cluster, centroids):
     return com_col_list
 
 def crop(mask):
-        mid = find_midpoint_v4(mask)
-        y_nonzero, x_nonzero = np.nonzero(mask)
-        y_lims = [np.min(y_nonzero), np.max(y_nonzero)]
-        x_lims = np.array([np.min(x_nonzero), np.max(x_nonzero)])
-        x_dist = max(np.abs(x_lims - mid))
-        x_lims = [mid - x_dist, mid+x_dist]
-        return mask[y_lims[0]:y_lims[1], x_lims[0]:x_lims[1]]
+        
+    """To crop a binary mask image to a centered region that tightly surrounds the object. The crop is horizontally
+    symmetric around the midpoint and vertically tight around the object, which helps in standardizing input regions
+    for further analysis like asymmetry or shape metrics."""
+
+    mid = find_midpoint_v4(mask)
+    y_nonzero, x_nonzero = np.nonzero(mask)
+    y_lims = [np.min(y_nonzero), np.max(y_nonzero)]
+    x_lims = np.array([np.min(x_nonzero), np.max(x_nonzero)])
+    x_dist = max(np.abs(x_lims - mid))
+    x_lims = [mid - x_dist, mid+x_dist]
+    return mask[y_lims[0]:y_lims[1], x_lims[0]:x_lims[1]]
 
 """Finds the horizontal midpoint of an image in terms of pixel intensity distribution."""
 def find_midpoint_v4(mask):
