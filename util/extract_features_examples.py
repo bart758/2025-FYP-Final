@@ -411,45 +411,48 @@ def get_hsv_means(image, slic_segments):
     return hsv_means
 
 def rgb_var(image, slic_segments):
-    
+    """Takes rgb image data and slic_segments, which is the same size as the image and for each pixel has a value for which segmnet/superpixel 
+    the pixel belongs to by similarity. And returns tuple (red_var, green_var, blue_var), variance."""
 
-    if len(np.unique(slic_segments)) == 2: 
+    if len(np.unique(slic_segments)) == 2: # if only two superpixels, variance in all colors are zero
         return 0, 0, 0
 
-    rgb_means = get_rgb_means(image, slic_segments)
+    rgb_means = get_rgb_means(image, slic_segments) # else gets rgb means of superpixels
     n = len(rgb_means) 
 
     red = []
     green = []
     blue = []
-    for rgb_mean in rgb_means:
+    for rgb_mean in rgb_means: # separates by color channel
         red.append(rgb_mean[0])
         green.append(rgb_mean[1])
         blue.append(rgb_mean[2])
 
-    red_var = variance(red, sum(red)/n)
+    red_var = variance(red, sum(red)/n) # and gets sample variance for each channel, using means from each superpixel
     green_var = variance(green, sum(green)/n)
     blue_var = variance(blue, sum(blue)/n)
 
     return red_var, green_var, blue_var
 
 def hsv_var(image, slic_segments):
-    
-    if len(np.unique(slic_segments)) == 2: 
+    """Takes hsv image data and slic_segments, which is the same size as the image and for each pixel has a value for which segmnet/superpixel 
+    the pixel belongs to by similarity. And returns tuple (hue_var, sat_var, val_var), variance."""
+
+    if len(np.unique(slic_segments)) == 2: # if only two superpixels, variance in all colors are zero
         return 0, 0, 0
 
-    hsv_means = get_hsv_means(image, slic_segments)
+    hsv_means = get_hsv_means(image, slic_segments) # else gets hsv means of superpixels
     n = len(hsv_means) 
 
     hue = []
     sat = []
     val = []
-    for hsv_mean in hsv_means:
+    for hsv_mean in hsv_means: # separates by channel
         hue.append(hsv_mean[0])
         sat.append(hsv_mean[1])
         val.append(hsv_mean[2])
 
-    hue_var = circvar(hue, high=1, low=0)
+    hue_var = circvar(hue, high=1, low=0) # and gets sample variance for each channel, using means from each superpixel
     sat_var = variance(sat, sum(sat)/n)
     val_var = variance(val, sum(val)/n)
 
@@ -457,17 +460,21 @@ def hsv_var(image, slic_segments):
 
 
 def color_dominance(image, mask, clusters = 5, include_ratios = False):
+    """Input RGB image, mask and otional boolean include_rations. Returns HSV for n dominant colors in n clusters, 
+    if include_ratios is True returns the ratio of pixels in each cluster, sorted descending by ratio."""
     
-    cut_im = cut_im_by_mask(image, mask) 
-    hsv_im = rgb2hsv(cut_im) 
-    flat_im = np.reshape(hsv_im, (-1, 3)) 
+    cut_im = cut_im_by_mask(image, mask) # crops image to only show masked area
+    hsv_im = rgb2hsv(cut_im) # rgb to hsv
+    flat_im = np.reshape(hsv_im, (-1, 3)) # flattens image from 2D array, where each [i, j] has h, s, v channels to 
+    # 1D array with the pixels in reading order of the original array and each [i] has h, s, v channels
 
-    k_means = KMeans(n_clusters=clusters, n_init=10, random_state=0)
-    k_means.fit(flat_im)
+    k_means = KMeans(n_clusters=clusters, n_init=10, random_state=0) # defines KMeans settings to be applied to image -> n_clusters = number of clusters to separate into, 
+    #  n_init = number of times to run kmeans with different centroids as starting point, random_state = int means deterministic centroid initialization
+    k_means.fit(flat_im) # separates the image into 5 clusters 
 
-    dom_colors = np.array(k_means.cluster_centers_, dtype='float32') 
+    dom_colors = np.array(k_means.cluster_centers_, dtype='float32') # gets the color of centroids, which are dominant in the image
 
-    if include_ratios:
+    if include_ratios: # if we include ratios, we add the ratio of pixels in each group, sorted descending by ratio
 
         counts = np.unique(k_means.labels_, return_counts=True)[1] 
         ratios = counts / flat_im.shape[0] 
@@ -480,55 +487,70 @@ def color_dominance(image, mask, clusters = 5, include_ratios = False):
     return dom_colors
 
 def compactness_score(mask):
-     
-    A = np.sum(mask)
+    """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*\pi*area)/(perimeter^2). Higher means more compact"""
 
-    struct_el = morphology.disk(2)
+    A = np.sum(mask) # calculates the area of the mask - 1 where white, 0 where black, sum is number of white pixels in mask - lession
 
-    mask_eroded = morphology.binary_erosion(mask, struct_el)
+    struct_el = morphology.disk(2) # binary mask of circle with radius 2
 
-    perimeter = mask - mask_eroded
+    mask_eroded = morphology.binary_erosion(mask, struct_el) # sets pixels (i,j) to the minimum over all pixels in the neighborhood covered by the binary mask centered at (i,j), so
+    # in practice sets the border pixels to 0, shrinks the mask
 
-    l = np.sum(perimeter)
+    perimeter = mask - mask_eroded # gets difference of masks, which is the eroded part, border/perimeter
 
-    compactness = (4*pi*A)/(l**2)
+    l = np.sum(perimeter) # sum of perimeter is the lenght of the border
+
+    compactness = (4*pi*A)/(l**2) # calculate compactness by formula
 
     score = round(1-compactness, 3)
 
-    return compactness
+    return score
 
 def convexity_score(mask):
+    """Input a mask. Returns convexity between 0 and 1, 1 being perfectly convex - circle or elipsis, 0 completely irregular."""
 
-    coords = np.transpose(np.nonzero(mask))
+    coords = np.transpose(np.nonzero(mask)) # get a vertical array of all the coordinates of nonzero values in mask
 
-    hull = ConvexHull(coords)
+    hull = ConvexHull(coords) # Calculate a ConvexHull - the smallest convex polygon that encompases all the points
+    print(hull.area)
 
     lesion_area = np.count_nonzero(mask)
 
-    convex_hull_area = hull.volume + hull.area
+    convex_hull_area = hull.volume + hull.area # hull.volume is the area of the hull and hull.area is the perimiter of the hull because input points are 2D
 
-    convexity = lesion_area / convex_hull_area
+    convexity = lesion_area / convex_hull_area # compare the area of the lession with the area of the convex hull
     
-    return convexity 
+    plt.figure(figsize=(10,5))
+    plt.subplot(1,2,1)
+    plt.plot(coords[:,0], coords[:,1], 'o')
+    for simplex in hull.simplices:
+        plt.plot(coords[simplex, 0], coords[simplex, 1], 'k-')
+    plt.plot(coords[hull.vertices,0], coords[hull.vertices,1], 'r--', lw=2)
+    plt.plot(coords[hull.vertices[0],0], coords[hull.vertices[0],1], 'ro')
+    plt.subplot(1,2,2)
+    plt.imshow(mask)
+
+    return convexity # should be 0 to 1, 1 being perfectly convex - circle or elipsis, 0 completely irregular 
 
 def get_relative_rgb_means(image, slic_segments):
+    """Input RGB image and slic segments array. Returns normalized proportional rgb in lesion, difference in rgb between lesion and skin"""
 
-    max_segment_id = np.unique(slic_segments)[-1]
+    max_segment_id = np.unique(slic_segments)[-1] # get the number of segments in the image
 
     rgb_means = []
-    for i in range(0, max_segment_id + 1):
+    for i in range(0, max_segment_id + 1): # for the i segment id in the number of segments
 
-        segment = image.copy()
-        segment[slic_segments != i] = -1
+        segment = np.astype(image.copy(), "int8") # get a copy of the image
+        segment[slic_segments != i] = -1 # and set all the non i segments to -1
 
-        rgb_mean = np.mean(segment, axis = (0, 1), where = (segment != -1))
+        rgb_mean = np.mean(segment, axis = (0, 1), where = (segment != -1)) # get the mean r, g, b values along the i-th segment
         
-        rgb_means.append(rgb_mean) 
+        rgb_means.append(rgb_mean) # append the means of r, g, b values, rgb_means i a list of array[mean(r), mean(g), mean(b)]
 
-    rgb_means_lesion = np.mean(rgb_means[1:],axis=0)
-    rgb_means_skin = np.mean(rgb_means[0])
+    rgb_means_lesion = np.mean(rgb_means[1:],axis=0) # get mean of all the rgb values in the lesion
+    rgb_means_skin = np.mean(rgb_means[0]) # get mean of rgb values in outside of lesion because of the way that slic works segment 0 is always the skin, because it starts at the corner
 
-    F1, F2, F3 = rgb_means_lesion/sum(rgb_means_lesion)
-    F10, F11, F12 = rgb_means_lesion - rgb_means_skin
+    F1, F2, F3 = rgb_means_lesion/sum(rgb_means_lesion) # compute the normalized proportions of r, g, b in the lesion
+    F10, F11, F12 = rgb_means_lesion - rgb_means_skin # compute the difference between the rgb in skin and lesion
         
-    return F1, F2, F3, F10, F11, F12
+    return F1, F2, F3, F10, F11, F12 # F1, F10 - red; F2, F11 - green; F3, F12 - blue
