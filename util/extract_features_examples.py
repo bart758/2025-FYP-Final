@@ -519,16 +519,6 @@ def convexity_score(mask):
     convex_hull_area = hull.volume + hull.area # hull.volume is the area of the hull and hull.area is the perimiter of the hull because input points are 2D
 
     convexity = lesion_area / convex_hull_area # compare the area of the lession with the area of the convex hull
-    
-    plt.figure(figsize=(10,5))
-    plt.subplot(1,2,1)
-    plt.plot(coords[:,0], coords[:,1], 'o')
-    for simplex in hull.simplices:
-        plt.plot(coords[simplex, 0], coords[simplex, 1], 'k-')
-    plt.plot(coords[hull.vertices,0], coords[hull.vertices,1], 'r--', lw=2)
-    plt.plot(coords[hull.vertices[0],0], coords[hull.vertices[0],1], 'ro')
-    plt.subplot(1,2,2)
-    plt.imshow(mask)
 
     return convexity # should be 0 to 1, 1 being perfectly convex - circle or elipsis, 0 completely irregular 
 
