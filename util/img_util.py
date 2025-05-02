@@ -1,19 +1,37 @@
 import random
-
 import cv2
+from .image import Image
+from os import path, listdir
+from .progressbar import progressbar
 
+def importImages(directory: str, metadata_path: str) -> list[Image]:
 
-def readImageFile(file_path):
-    # read image as an 8-bit array
-    img_bgr = cv2.imread(file_path)
+    Image.set_metadata_path(metadata_path)
 
-    # convert to RGB
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    file_list = sorted(
+                [path.join(directory, f) for f in listdir(directory) if
+                f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
+            )
 
-    # convert the original image to grayscale
-    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+    images: list[Image] = []
 
-    return img_rgb, img_gray
+    for image_path in progressbar(file_list, "Loading images: ", 40):
+        images.append(Image(image_path))
+    print("All images loaded succesfuly") 
+    
+    return images
+
+# def readImageFile(file_path):
+#     # read image as an 8-bit array
+#     img_bgr = cv2.imread(file_path)
+
+#     # convert to RGB
+#     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+
+#     # convert the original image to grayscale
+#     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+
+#     return img_rgb, img_gray
 
 
 def saveImageFile(img_rgb, file_path):

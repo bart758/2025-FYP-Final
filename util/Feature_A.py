@@ -74,38 +74,38 @@ def crop(mask):
 
 
 
-"""Finds the horizontal midpoint of an image in terms of pixel intensity distribution."""
+
 def find_midpoint_v4(mask):
-        summed = np.sum(mask, axis=0)
-        half_sum = np.sum(summed) / 2
-        for i, n in enumerate(np.add.accumulate(summed)):
-            if n > half_sum:
-                return i
+    """Finds the horizontal midpoint of an image in terms of pixel intensity distribution."""
+    summed = np.sum(mask, axis=0)
+    half_sum = np.sum(summed) / 2
+    for i, n in enumerate(np.add.accumulate(summed)):
+        if n > half_sum:
+            return i
             
 
 
 
-"""Literally just returns the geometrical midpoint of the image in the format [row col]"""
+
 def find_midpoint_v1(image):
-    
+    """Literally just returns the geometrical midpoint of the image in the format [row col]"""
     row_mid = image.shape[0] / 2
     col_mid = image.shape[1] / 2
     return row_mid, col_mid
 
 
-"""Measures the asymmetry of an image. The function splits the image into 4 sections 
-based on the midpoint. Not like a coordinate plane with 4 quadrants. The parts are not 
-unique. It splits it into upper lower halves and right left halves. Then flips lower 
-and right halves. Then it uses xor to compare the left with flipped right and upper 
-with flipped lower. Creating arrays which have values of 1 where compared halves are 
-not the same. Then it calculates the actual score by summing all the not symmetrical 
-pixels and dividing their sum by 2 times the sum of all the pixels of the original mask. 
-(the denominator will always be larger than the numerator )
-"""
+
 
 def asymmetry(mask):
-    
-
+    """Measures the asymmetry of an image. The function splits the image into 4 sections 
+    based on the midpoint. Not like a coordinate plane with 4 quadrants. The parts are not 
+    unique. It splits it into upper lower halves and right left halves. Then flips lower 
+    and right halves. Then it uses xor to compare the left with flipped right and upper 
+    with flipped lower. Creating arrays which have values of 1 where compared halves are 
+    not the same. Then it calculates the actual score by summing all the not symmetrical 
+    pixels and dividing their sum by 2 times the sum of all the pixels of the original mask. 
+    (the denominator will always be larger than the numerator )
+    """
     row_mid, col_mid = find_midpoint_v1(mask)
 
     upper_half = mask[:ceil(row_mid), :]
@@ -130,14 +130,14 @@ def asymmetry(mask):
 
 
 
-"""Measures the rotational asymmetry. The integer in the input is the amount of 
-rotations within 90 degrees. It will always rotate the image to 90 degrees in the end,
- but the input n determines the amount of steps in which it will do it. Basically, 
- using the two previous functions, this one calculates asymmetry for each rotation 
- then returns a dictionary"""
+
 
 def rotation_asymmetry(mask, n: int):
-
+    """Measures the rotational asymmetry. The integer in the input is the amount of 
+    rotations within 90 degrees. It will always rotate the image to 90 degrees in the end,
+    but the input n determines the amount of steps in which it will do it. Basically, 
+    using the two previous functions, this one calculates asymmetry for each rotation 
+    then returns a dictionary"""
     asymmetry_scores = {}
 
     for i in range(n):
@@ -210,11 +210,11 @@ def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
 
 
 # This function is from Feature_B, but we need it here for another function
-"""Cuts empty / excess borders. Isolates the area of interest. Removes all borders 
-(rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
-and cutting it."""
+
 def cut_mask(mask):
-    
+    """Cuts empty / excess borders. Isolates the area of interest. Removes all borders 
+    (rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
+    and cutting it."""
     col_sums = np.sum(mask, axis=0)
     row_sums = np.sum(mask, axis=1)
 

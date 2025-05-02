@@ -178,7 +178,6 @@ def convexity_score(mask):
     coords = np.transpose(np.nonzero(mask)) # get a vertical array of all the coordinates of nonzero values in mask
 
     hull = ConvexHull(coords) # Calculate a ConvexHull - the smallest convex polygon that encompases all the points
-    print(hull.area)
 
     lesion_area = np.count_nonzero(mask)
 
