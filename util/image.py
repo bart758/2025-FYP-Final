@@ -1,8 +1,9 @@
-from matplotlib.pyplot import imshow
 import cv2
 import pandas as pd
 import numpy as np
 import os
+from .progressbar import progressbar
+from .img_util import cut_mask, cut_im_by_mask
 
 def readImageFile(file_path):
     # read image as an 8-bit array
@@ -54,9 +55,21 @@ class Image():
     @property
     def mask(self):
         try:
-            return np.where(cv2.cvtColor(cv2.imread("".join(["masks\\", self.image_id.split(".")[0], "_mask.png"])), cv2.COLOR_BGR2GRAY) > 10, 1, 0)
+            return np.where(cv2.cvtColor(cv2.imread("".join(["masks\\", self.image_id.split(".")[0], "_mask.png"])), cv2.COLOR_BGR2GRAY) >= 1, 1, 0)
         except:
             raise FileNotFoundError(f"Mask for {self.image_id} not found in .masks/ directory.")
+        
+    @property
+    def mask_cropped(self):
+        return cut_mask(self.mask)
+    
+    @property
+    def image_cropped(self):
+        return cut_im_by_mask(self.color, self.mask)
+    
+    @property
+    def gray_cropped(self):
+        return cut_im_by_mask(self.gray, self.mask)
     
     def __lt__(self, other):
         return int(self.metadata["patient_id"][4:]) < int(other.metadata["patient_id"][4:])
@@ -70,7 +83,22 @@ class Image():
     def __repr__(self):
         return self.metadata.name
 
+def importImages(directory: str, metadata_path: str) -> list[Image]:
 
+    Image.set_metadata_path(metadata_path)
+
+    file_list = sorted(
+                [os.path.join(directory, f) for f in os.listdir(directory) if
+                f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
+            )
+
+    images: list[Image] = []
+
+    for image_path in progressbar(file_list, "Loading images: ", 40):
+        images.append(Image(image_path))
+    print("All images loaded succesfuly") 
+    
+    return images
 
 
     

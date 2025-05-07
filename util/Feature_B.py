@@ -56,68 +56,6 @@ def get_compactness(mask):
 
 
 
-"""Cuts empty / excess borders. Isolates the area of interest. Removes all borders 
-(rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
-and cutting it."""
-def cut_mask(mask):
-    
-    col_sums = np.sum(mask, axis=0)
-    row_sums = np.sum(mask, axis=1)
-
-    active_cols = []
-    for index, col_sum in enumerate(col_sums):
-        if col_sum != 0:
-            active_cols.append(index)
-
-    active_rows = []
-    for index, row_sum in enumerate(row_sums):
-        if row_sum != 0:
-            active_rows.append(index)
-
-    col_min = active_cols[0]
-    col_max = active_cols[-1]
-    row_min = active_rows[0]
-    row_max = active_rows[-1]
-
-    cut_mask_ = mask[row_min:row_max+1, col_min:col_max+1]
-
-    return cut_mask_
-
-
-
-
-"""Almost the same as the previous function. This time you pass an image and a mask.
- The function masks the active columns / rows based on the mask and then crops the 
- image based on that. So the returned image will be a rectangle just zoomed in on some 
- part based on the mask."""
-
-def cut_im_by_mask(image, mask):
-    
-
-    col_sums = np.sum(mask, axis=0)
-    row_sums = np.sum(mask, axis=1)
-
-    active_cols = []
-    for index, col_sum in enumerate(col_sums):
-        if col_sum != 0:
-            active_cols.append(index)
-
-    active_rows = []
-    for index, row_sum in enumerate(row_sums):
-        if row_sum != 0:
-            active_rows.append(index)
-
-    col_min = active_cols[0]
-    col_max = active_cols[-1]
-    row_min = active_rows[0]
-    row_max = active_rows[-1]
-
-    cut_image = image[row_min:row_max+1, col_min:col_max+1]
-
-    return cut_image
-
-
-
 """Literally just returns the geometrical midpoint of the image in the format [row col]"""
 def find_midpoint_v1(image):
     
@@ -150,7 +88,7 @@ def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
 
 
 def compactness_score(mask):
-    """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*\pi*area)/(perimeter^2). Higher means more compact"""
+    """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*pi*area)/(perimeter^2). Higher means more compact"""
 
     A = np.sum(mask) # calculates the area of the mask - 1 where white, 0 where black, sum is number of white pixels in mask - lession
 
@@ -165,9 +103,7 @@ def compactness_score(mask):
 
     compactness = (4*pi*A)/(l**2) # calculate compactness by formula
 
-    score = round(1-compactness, 3)
-
-    return score
+    return compactness
 
 
 

@@ -1,25 +1,6 @@
 import random
 import cv2
-from .image import Image
-from os import path, listdir
-from .progressbar import progressbar
-
-def importImages(directory: str, metadata_path: str) -> list[Image]:
-
-    Image.set_metadata_path(metadata_path)
-
-    file_list = sorted(
-                [path.join(directory, f) for f in listdir(directory) if
-                f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
-            )
-
-    images: list[Image] = []
-
-    for image_path in progressbar(file_list, "Loading images: ", 40):
-        images.append(Image(image_path))
-    print("All images loaded succesfuly") 
-    
-    return images
+import numpy as np
 
 # def readImageFile(file_path):
 #     # read image as an 8-bit array
@@ -33,6 +14,60 @@ def importImages(directory: str, metadata_path: str) -> list[Image]:
 
 #     return img_rgb, img_gray
 
+def cut_mask(mask):
+    """Cuts empty / excess borders. Isolates the area of interest. Removes all borders 
+    (rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
+    and cutting it."""
+    
+    col_sums = np.sum(mask, axis=0)
+    row_sums = np.sum(mask, axis=1)
+
+    active_cols = []
+    for index, col_sum in enumerate(col_sums):
+        if col_sum != 0:
+            active_cols.append(index)
+
+    active_rows = []
+    for index, row_sum in enumerate(row_sums):
+        if row_sum != 0:
+            active_rows.append(index)
+
+    col_min = active_cols[0]
+    col_max = active_cols[-1]
+    row_min = active_rows[0]
+    row_max = active_rows[-1]
+
+    cut_mask_ = mask[row_min:row_max+1, col_min:col_max+1]
+
+    return cut_mask_
+
+def cut_im_by_mask(image, mask):
+    """Almost the same as the previous function. This time you pass an image and a mask.
+    The function masks the active columns / rows based on the mask and then crops the 
+    image based on that. So the returned image will be a rectangle just zoomed in on some 
+    part based on the mask."""
+
+    col_sums = np.sum(mask, axis=0)
+    row_sums = np.sum(mask, axis=1)
+
+    active_cols = []
+    for index, col_sum in enumerate(col_sums):
+        if col_sum != 0:
+            active_cols.append(index)
+
+    active_rows = []
+    for index, row_sum in enumerate(row_sums):
+        if row_sum != 0:
+            active_rows.append(index)
+
+    col_min = active_cols[0]
+    col_max = active_cols[-1]
+    row_min = active_rows[0]
+    row_max = active_rows[-1]
+
+    cut_image = image[row_min:row_max+1, col_min:col_max+1]
+
+    return cut_image
 
 def saveImageFile(img_rgb, file_path):
     try:

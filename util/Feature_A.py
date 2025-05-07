@@ -125,7 +125,7 @@ def asymmetry(mask):
 
     asymmetry_score = (hori_asymmetry_pxls + vert_asymmetry_pxls) / (total_pxls * 2)
 
-    return round(asymmetry_score, 4)
+    return asymmetry_score
 
 
 
