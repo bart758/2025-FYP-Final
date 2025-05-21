@@ -37,7 +37,7 @@ total pixels. The result is returned as a percentage. """
 
 
 
-def measure_blue_veil(image):
+def original_measure_blue_veil(image):
     """
      This function takes in an image and iterates through all pixels, counting all that have blue as their 
      dominant color, while also making sure that red and green values are similar to each other:
@@ -52,6 +52,17 @@ def measure_blue_veil(image):
 
             if b > 60 and (r - 46 < g) and (g < r + 15):
                 count += 1
+
+    return count
+
+def measure_blue_veil(image):
+    """
+        This function takes in an image and iterates through all pixels, counting all that have blue as their 
+        dominant color, while also making sure that red and green values are similar to each other:
+    if b > 60 and (r - 46 < g) and (g < r + 15) b,r and g signifying blue, red and green values.
+    """
+    r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
+    count = np.sum(np.where((b > 60) & (r - 46 < g) & (g < r + 15), 1, 0))
 
     return count
 

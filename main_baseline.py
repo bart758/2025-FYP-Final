@@ -1,3 +1,26 @@
+# def ABCfeatures(images: list[Image]) -> pd.DataFrame:
+#     """Extracts features from list of images and saves into dataframe.
+
+#     Args:
+#         images (list[Image]): list of Image objects
+
+#     Returns:
+#         pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | "feat_C" | "true_melanoma"
+#     """
+#     features_df = pd.DataFrame(columns=["patient_id", "feat_A", "feat_B", "feat_C", "true_melanoma"])
+
+#     for i, image in enumerate(progressbar(sorted(images))):
+#         features_df.loc[i, "patient_id"] = image
+#         try:
+#             features_df.loc[i, "feat_A"] = get_asymmetry(image.mask)
+#             features_df.loc[i, "feat_B"] = convexity_score(image.mask)
+#             features_df.loc[i, "feat_C"] = get_multicolor_rate(image.color, image.mask, 15)
+#         except:
+#             pass
+#         features_df.loc[i, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
+
+#     return features_df.dropna()
+
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -6,6 +29,9 @@ from collections.abc import Callable
 
 from util.progressbar import progressbar
 from util.image import Image, importImages
+from util.Feature_A import asymmetry
+from util.Feature_B import compactness_score
+from util.Feature_C import measure_blue_veil
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
@@ -19,7 +45,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     """
     features_df = pd.DataFrame(columns=["patient_id", "feat_A", "feat_B", "feat_C", "true_melanoma"])
 
-    for i_image, image in progressbar(list(enumerate(images))):
+    for i_image, image in enumerate(images):
         features_df.loc[i_image, "patient_id"] = image
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
@@ -30,12 +56,11 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
 
             for arg in args:
                 if arg == "image":
-                    variables.append(image.image_cropped)
+                    variables.append(image.color)
                 try:
                     if arg == "mask":
-                        variables.append(image.mask_cropped)
+                        variables.append(image.mask)
                 except FileNotFoundError as e:
-                    print(e)
                     break
 
             if variables:
@@ -64,8 +89,12 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
     try:
         data_df = pd.read_csv(csv_path).dropna()
     except FileNotFoundError:
-        images = importImages(images_path, metadata_path)
-        data_df = extractFeatures(images, [...])
+        images: list[Image] = importImages(images_path, metadata_path)
+        data_df = extractFeatures(images, [asymmetry, compactness_score, measure_blue_veil])
+        data_df.to_csv("features.csv")
+        data_df = pd.read_csv(csv_path).dropna()
+
+    print(data_df.head())
 
     # select only the baseline features.
     baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
@@ -99,3 +128,4 @@ if __name__ == "__main__":
     save_path = "./result/result_baseline.csv"
 
     main(csv_path, save_path)
+

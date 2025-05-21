@@ -173,6 +173,7 @@ cython_debug/
 # Ignore Images in data file and masks
 data/
 masks/
+!masks/example.jpg
 
 
 # Ignore .DS_Store files for Mac users
@@ -183,5 +184,6 @@ result/*.jpg
 result/*.jpeg
 util/test.py
 util/test.ipynb
-test.ipynb
-test.py
+testing/
+test*.ipynb
+test*.py
