@@ -1,3 +1,4 @@
+
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -17,11 +18,10 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     Returns:
         pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
     """
-    features_df = pd.DataFrame(columns=["patient_id", "feat_A", "feat_B", "feat_C", "true_melanoma"])
+    features_df = pd.DataFrame(columns=["patient_id", "true_melanoma"])
 
     for i_image, image in progressbar(list(enumerate(images))):
         features_df.loc[i_image, "patient_id"] = image
-        features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
         for i_func, func in enumerate(extraction_functions):
             variables = list()
@@ -29,34 +29,39 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
             args = func.__code__.co_varnames[0: arg_count]
 
             for arg in args:
-                if arg == "image":
-                    variables.append(image.image_cropped)
                 try:
+                    if arg == "image":
+                        variables.append(image.image_cropped)
                     if arg == "mask":
                         variables.append(image.mask_cropped)
-                except FileNotFoundError as e:
+                except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
                     print(e)
+                    variables = []
                     break
 
             if variables:
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
+
+        features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
+
     return features_df
             
 
-def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_path: str = "./metadata.csv"):
+def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv"):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
     "./data" and metadata path "./metadata.csv" to create the cvs using
     ABCfeatures function.
 
-    Separates the data into x and y parameters for use in clasification,
-    uses [placeholder] to clasify each image as melanoma or not melanoma
+    Separates the data into x and y parameters for use in classification,
+    uses Logistic Regression to classify each image as melanoma or not melanoma
     and saves a csv with the results.
 
     Args:
         csv_path (str): path to the features csv with columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
         save_path (str): save path for result csv with columns image_id | true_label | predicted_label
+        features (list[Callable[..., float]]): List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
         images_path (str, optional): directory of images to be used in case the features csv does not exist. Defaults to "./data".
         metadata_path (str, optional): path to metadata.csv from original dataset. Defaults to "./metadata.csv".
     """
@@ -64,8 +69,12 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
     try:
         data_df = pd.read_csv(csv_path).dropna()
     except FileNotFoundError:
-        images = importImages(images_path, metadata_path)
-        data_df = extractFeatures(images, [...])
+        images: list[Image] = importImages(images_path, metadata_path)
+        data_df = extractFeatures(images, features)
+        data_df.to_csv("features.csv")
+        data_df = pd.read_csv(csv_path).dropna()
+
+    print(data_df.head())
 
     # select only the baseline features.
     baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
@@ -73,13 +82,15 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
     y_all = data_df["true_melanoma"]
 
     # split the dataset into training and testing sets.
-    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.3, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
 
     # train the classifier (using logistic regression as an example)
-    clf = LogisticRegression(max_iter=1000, verbose=1)
+    clf = LogisticRegression(max_iter=1000, verbose=1, class_weight='balanced', solver='liblinear')
     clf.fit(x_train, y_train)
 
     # test the trained classifier
+    probs = clf.predict_proba(x_test)[:, 1]
+
     y_pred = clf.predict(x_test)
     acc = accuracy_score(y_test, y_pred)
     cm = confusion_matrix(y_test, y_pred)
@@ -95,7 +106,10 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
 
 
 if __name__ == "__main__":
-    csv_path = "./features.csv"
-    save_path = "./result/result_baseline.csv"
+    
+    features = [...]
+    csv_path = "features.csv"
+    save_path = "result/result_baseline.csv"
 
-    main(csv_path, save_path)
+    main(csv_path, save_path, features)
+
