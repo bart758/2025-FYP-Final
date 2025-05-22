@@ -8,7 +8,7 @@ from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
 from skimage.transform import resize
 from skimage.transform import rotate
-from skimage import morphology
+from skimage import morphology, measure
 from sklearn.cluster import KMeans
 from skimage.segmentation import slic
 from skimage.color import rgb2hsv
@@ -89,20 +89,13 @@ def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
 
 def compactness_score(mask):
     """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*pi*area)/(perimeter^2). Higher means more compact"""
-
+    
     A = np.sum(mask) # calculates the area of the mask - 1 where white, 0 where black, sum is number of white pixels in mask - lession
 
-    struct_el = morphology.disk(2) # binary mask of circle with radius 2
-
-    mask_eroded = morphology.binary_erosion(mask, struct_el) # sets pixels (i,j) to the minimum over all pixels in the neighborhood covered by the binary mask centered at (i,j), so
-    # in practice sets the border pixels to 0, shrinks the mask
-
-    perimeter = mask - mask_eroded # gets difference of masks, which is the eroded part, border/perimeter
-
-    l = np.sum(perimeter) # sum of perimeter is the lenght of the border
-
-    compactness = (4*pi*A)/(l**2) # calculate compactness by formula
-
+    l = measure.perimeter_crofton(mask)
+    
+    compactness = (4*np.pi*A)/(l**2) # calculate compactness by formula
+    
     return compactness
 
 

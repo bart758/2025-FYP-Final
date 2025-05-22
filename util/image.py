@@ -188,7 +188,7 @@ class Image():
             If image does not have a mask in the .masks/ directory.
         """
         try:
-            return np.where(cv2.cvtColor(cv2.imread("".join(["masks/", self.image_id.split(".")[0], "_mask.png"])), cv2.COLOR_BGR2GRAY) >= 1, 1, 0)
+            return np.where(cv2.imread("".join(["masks/", self.image_id.split(".")[0], "_mask.png"]), cv2.IMREAD_GRAYSCALE) >= 1, 1, 0).astype(np.uint8)
         except:
             raise FileNotFoundError(f"Mask for {self.image_id} not found in .masks/ directory.")
         
