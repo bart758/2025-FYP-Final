@@ -16,7 +16,7 @@ def readImageFile(file_path: str) -> tuple[np.ndarray, np.ndarray]:
 
     return img_rgb, img_gray
 
-def cut_mask(mask: np.ndarray) -> np.ndarray:
+def cut_mask(mask: np.ndarray, image_id: str = "") -> np.ndarray:
     """Cuts empty / excess borders.
 
     Isolates the area of interest. Removes all borders 
@@ -27,6 +27,8 @@ def cut_mask(mask: np.ndarray) -> np.ndarray:
     ----------
     mask : np.ndarray
         Mask of lession
+    image_id: str, optional
+        Id of image mask
 
     Returns
     -------
@@ -47,6 +49,9 @@ def cut_mask(mask: np.ndarray) -> np.ndarray:
         if row_sum != 0:
             active_rows.append(index)
 
+    if not active_cols or not active_rows:
+        raise ValueError(f"Mask for image {image_id} is empty.")
+
     col_min = active_cols[0]
     col_max = active_cols[-1]
     row_min = active_rows[0]
@@ -56,7 +61,7 @@ def cut_mask(mask: np.ndarray) -> np.ndarray:
 
     return cut_mask_
 
-def cut_im_by_mask(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
+def cut_im_by_mask(image: np.ndarray, mask: np.ndarray, image_id: str = "") -> np.ndarray:
     """Cuts empty / excess borders of image by mask.
 
     The function masks the active columns / rows based on the mask and then crops the 
@@ -68,6 +73,8 @@ def cut_im_by_mask(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
     image : _type_
         _description_
     mask : _type_
+        _description_
+    image_id: _type_
         _description_
 
     Returns
@@ -88,6 +95,9 @@ def cut_im_by_mask(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
     for index, row_sum in enumerate(row_sums):
         if row_sum != 0:
             active_rows.append(index)
+
+    if not active_cols or not active_rows:
+        raise ValueError(f"Mask for image {image_id} is empty.")
 
     col_min = active_cols[0]
     col_max = active_cols[-1]
@@ -201,7 +211,7 @@ class Image():
         np.ndarray
             Binary mask array.
         """
-        return cut_mask(self.mask)
+        return cut_mask(self.mask, str(self))
     
     @property
     def image_cropped(self) -> np.ndarray:
@@ -212,7 +222,7 @@ class Image():
         np.ndarray
             Image array.
         """
-        return cut_im_by_mask(self.color, self.mask)
+        return cut_im_by_mask(self.color, self.mask, str(self))
     
     @property
     def gray_cropped(self) -> np.ndarray:

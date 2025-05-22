@@ -47,7 +47,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     """
     features_df = pd.DataFrame(columns=["patient_id", "feat_A", "feat_B", "feat_C", "true_melanoma"])
 
-    for i_image, image in enumerate(images):
+    for i_image, image in progressbar(list(enumerate(images))):
         features_df.loc[i_image, "patient_id"] = image
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
@@ -57,12 +57,13 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
             args = func.__code__.co_varnames[0: arg_count]
 
             for arg in args:
-                if arg == "image":
-                    variables.append(image.color)
                 try:
+                    if arg == "image":
+                        variables.append(image.image_cropped)
                     if arg == "mask":
-                        variables.append(image.mask)
-                except FileNotFoundError as e:
+                        variables.append(image.mask_cropped)
+                except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
+                    print(e)
                     variables = []
                     break
 

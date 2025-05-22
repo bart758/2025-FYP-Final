@@ -9,14 +9,13 @@ from skimage.measure import label, regionprops
 from skimage.transform import resize
 from skimage.transform import rotate
 from skimage import morphology
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MiniBatchKMeans
 from skimage.segmentation import slic
 from skimage.color import rgb2hsv
 from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
 from itertools import combinations
-
 
 def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> float:
     """
@@ -38,23 +37,13 @@ def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> floa
         Normalized maximum distance between colors in lesion.
     """
 
-    image = resize(image, (image.shape[0] // 4, image.shape[1] // 4), anti_aliasing=True)
-    mask = resize(mask, (mask.shape[0] // 4, mask.shape[1] // 4), anti_aliasing=True)
-
-    # Remove background
-    im2 = image.copy()
-    try:
-        im2[mask == 0] = 0
-    except IndexError:
-        f"Image sizes don't match up in image {image}."
-
-    col_list = [im2[i, j] for i in range(mask.shape[0]) for j in range(mask.shape[1]) if mask[i, j] != 0]
+    col_list = image[mask != 0].reshape(-1, 3)
 
     if len(col_list) < 2:
         return 0.0
 
     # KMeans clustering
-    cluster = KMeans(n_clusters=n, n_init=10, random_state=0).fit(col_list)
+    cluster = MiniBatchKMeans(n_clusters=n, n_init=10, random_state=0).fit(col_list)
     centers = cluster.cluster_centers_
 
     # Calculate max pairwise distance
@@ -64,6 +53,54 @@ def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> floa
     normalized = round(max_dist / np.sqrt(3), 4)
 
     return normalized
+
+
+# def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> float:
+#     """
+#     Measure color variation in the masked lesion area using clustering.
+#     Returns normalized color variation in [0, 1] range.
+
+#     Parameters
+#     ----------
+#     image: np.ndarray
+#         Color image of the lesion.
+#     mask: np.ndarray
+#         Mask of the lesion image.
+#     n: int, optional
+#         Number of color groups. (Conservative: 3, Sensitive: 5), by default 4.
+
+#     Returns
+#     -------
+#     float
+#         Normalized maximum distance between colors in lesion.
+#     """
+
+#     image = resize(image, (image.shape[0] // 4, image.shape[1] // 4), anti_aliasing=True)
+#     mask = resize(mask, (mask.shape[0] // 4, mask.shape[1] // 4), anti_aliasing=True)
+
+#     # Remove background
+#     im2 = image.copy()
+#     try:
+#         im2[mask == 0] = 0
+#     except IndexError:
+#         f"Image sizes don't match up in image {image}."
+
+#     col_list = [im2[i, j] for i in range(mask.shape[0]) for j in range(mask.shape[1]) if mask[i, j] != 0]
+
+#     if len(col_list) < 2:
+#         return 0.0
+
+#     # KMeans clustering
+#     cluster = KMeans(n_clusters=n, n_init=10, random_state=0).fit(col_list)
+#     centers = cluster.cluster_centers_
+
+#     # Calculate max pairwise distance
+#     max_dist = max(np.linalg.norm(np.array(c1) - np.array(c2)) for c1, c2 in combinations(centers, 2))
+
+#     # Normalize RGB values to [0, 1]
+#     normalized = round(max_dist / np.sqrt(3), 4)
+
+#     return normalized
 
 def measure_pigment_network(image):
     """The function analyzes an image to calculate the percentage of its area covered by pigment-like
