@@ -20,10 +20,12 @@
 #         features_df.loc[i, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
 #     return features_df.dropna()
-
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_curve, classification_report
 from sklearn.model_selection import train_test_split
 from collections.abc import Callable
 
@@ -104,13 +106,15 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
     y_all = data_df["true_melanoma"]
 
     # split the dataset into training and testing sets.
-    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.3, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
 
     # train the classifier (using logistic regression as an example)
-    clf = LogisticRegression(max_iter=1000, verbose=1)
+    clf = LogisticRegression(max_iter=1000, verbose=1, class_weight='balanced', solver='liblinear')
     clf.fit(x_train, y_train)
 
     # test the trained classifier
+    probs = clf.predict_proba(x_test)[:, 1]
+
     y_pred = clf.predict(x_test)
     acc = accuracy_score(y_test, y_pred)
     cm = confusion_matrix(y_test, y_pred)
