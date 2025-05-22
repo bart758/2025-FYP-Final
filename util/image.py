@@ -20,7 +20,7 @@ def cut_mask(mask: np.ndarray) -> np.ndarray:
     """Cuts empty / excess borders.
 
     Isolates the area of interest. Removes all borders 
-    (rows/columns) that sum up to 0. Basically making a rectangle around the area of interes
+    (rows/columns) that sum up to 0. Basically making a rectangle around the area of interest
     and cutting it.
 
     Parameters

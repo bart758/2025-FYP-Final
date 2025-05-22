@@ -15,7 +15,55 @@ from skimage.color import rgb2hsv
 from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
+from itertools import combinations
 
+
+def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> float:
+    """
+    Measure color variation in the masked lesion area using clustering.
+    Returns normalized color variation in [0, 1] range.
+
+    Parameters
+    ----------
+    image: np.ndarray
+        Color image of the lesion.
+    mask: np.ndarray
+        Mask of the lesion image.
+    n: int, optional
+        Number of color groups. (Conservative: 3, Sensitive: 5), by default 4.
+
+    Returns
+    -------
+    float
+        Normalized maximum distance between colors in lesion.
+    """
+
+    image = resize(image, (image.shape[0] // 4, image.shape[1] // 4), anti_aliasing=True)
+    mask = resize(mask, (mask.shape[0] // 4, mask.shape[1] // 4), anti_aliasing=True)
+
+    # Remove background
+    im2 = image.copy()
+    try:
+        im2[mask == 0] = 0
+    except IndexError:
+        f"Image sizes don't match up in image {image}."
+
+    col_list = [im2[i, j] for i in range(mask.shape[0]) for j in range(mask.shape[1]) if mask[i, j] != 0]
+
+    if len(col_list) < 2:
+        return 0.0
+
+    # KMeans clustering
+    cluster = KMeans(n_clusters=n, n_init=10, random_state=0).fit(col_list)
+    centers = cluster.cluster_centers_
+
+    # Calculate max pairwise distance
+    max_dist = max(np.linalg.norm(np.array(c1) - np.array(c2)) for c1, c2 in combinations(centers, 2))
+
+    # Normalize RGB values to [0, 1]
+    normalized = round(max_dist / np.sqrt(3), 4)
+
+    return normalized
 
 def measure_pigment_network(image):
     """The function analyzes an image to calculate the percentage of its area covered by pigment-like
@@ -57,8 +105,8 @@ def original_measure_blue_veil(image):
 
 def measure_blue_veil(image):
     """
-        This function takes in an image and iterates through all pixels, counting all that have blue as their 
-        dominant color, while also making sure that red and green values are similar to each other:
+    This function takes in an image and iterates through all pixels, counting all that have blue as their
+    dominant color, while also making sure that red and green values are similar to each other:
     if b > 60 and (r - 46 < g) and (g < r + 15) b,r and g signifying blue, red and green values.
     """
     r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
@@ -129,57 +177,6 @@ def measure_irregular_pigmentation(image):
     coverage_percentage = (irregular_pixels / total_pixels) * 100
 
     return coverage_percentage
-
-
-
-
-def get_multicolor_rate(im, mask, n):
-
-    """To quantify the degree of color diversity within a specified region of an image. It resizes the image and mask
-    for efficiency, extracts only the pixels within the mask, clusters them into n color groups, and computes the maximum 
-    Euclidean distance between the most prominent color centers. Useful in image analysis tasks like skin lesion detection,
-    artistic analysis, or visual complexity assessment."""
-
-    # mask = color.rgb2gray(mask)
-    im = resize(im, (im.shape[0] // 4, im.shape[1] // 4), anti_aliasing=True)
-    mask = resize(
-        mask, (mask.shape[0] // 4, mask.shape[1] // 4), anti_aliasing=True
-    )
-    im2 = im.copy()
-    im2[mask == 0] = 0
-
-    columns = im.shape[0]
-    rows = im.shape[1]
-    col_list = []
-    for i in range(columns):
-        for j in range(rows):
-            if mask[i][j] != 0:
-                col_list.append(im2[i][j] * 256)
-
-    if len(col_list) == 0:
-        return ""
-
-    cluster = KMeans(n_clusters=n, n_init=10).fit(col_list)
-    com_col_list = get_com_col(cluster, cluster.cluster_centers_)
-
-    dist_list = []
-    m = len(com_col_list)
-
-    if m <= 1:
-        return ""
-
-    for i in range(0, m - 1):
-        j = i + 1
-        col_1 = com_col_list[i]
-        col_2 = com_col_list[j]
-        dist_list.append(
-            np.sqrt(
-                (col_1[0] - col_2[0]) ** 2
-                + (col_1[1] - col_2[1]) ** 2
-                + (col_1[2] - col_2[2]) ** 2
-            )
-        )
-    return np.max(dist_list)
 
 
 
@@ -393,17 +390,14 @@ def get_relative_rgb_means(image, slic_segments):
     return F1, F2, F3, F10, F11, F12 # F1, F10 - red; F2, F11 - green; F3, F12 - blue
 
 
-
-
-
 # This function is from Feature_B, but we need it here for another function
-"""Almost the same as the previous function. This time you pass an image and a mask.
- The function masks the active columns / rows based on the mask and then crops the 
- image based on that. So the returned image will be a rectangle just zoomed in on some 
- part based on the mask."""
+
 
 def cut_im_by_mask(image, mask):
-    
+    """Almost the same as the previous function. This time you pass an image and a mask.
+     The function masks the active columns / rows based on the mask and then crops the
+     image based on that. So the returned image will be a rectangle just zoomed in on some
+     part based on the mask."""
 
     col_sums = np.sum(mask, axis=0)
     row_sums = np.sum(mask, axis=1)

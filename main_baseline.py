@@ -31,7 +31,7 @@ from util.progressbar import progressbar
 from util.image import Image, importImages
 from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
-from util.Feature_C import measure_blue_veil
+from util.Feature_C import get_multicolor_rate
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
@@ -61,10 +61,12 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
                     if arg == "mask":
                         variables.append(image.mask)
                 except FileNotFoundError as e:
+                    variables = []
                     break
 
             if variables:
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
+
     return features_df
             
 
@@ -90,7 +92,7 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
         data_df = pd.read_csv(csv_path).dropna()
     except FileNotFoundError:
         images: list[Image] = importImages(images_path, metadata_path)
-        data_df = extractFeatures(images, [asymmetry, compactness_score, measure_blue_veil])
+        data_df = extractFeatures(images, [asymmetry, compactness_score, get_multicolor_rate])
         data_df.to_csv("features.csv")
         data_df = pd.read_csv(csv_path).dropna()
 
@@ -124,8 +126,8 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
 
 
 if __name__ == "__main__":
-    csv_path = "./features.csv"
-    save_path = "./result/result_baseline.csv"
+    csv_path = "features.csv"
+    save_path = "result/result_baseline.csv"
 
     main(csv_path, save_path)
 
