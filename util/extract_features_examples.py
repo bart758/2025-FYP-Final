@@ -19,6 +19,14 @@ from scipy.spatial import ConvexHull
 
 def measure_pigment_network(image):
 
+    '''
+    The function analyzes an image to calculate the percentage of its area covered by pigment-like regions.
+    It does this by converting the image to LAB color space,
+    enhancing the lightness channel, segmenting the image using
+    a threshold (binary + otsu threshold) and then computing the ratio of the segmented "pigment" pixels to
+    the total pixels. The result is returned as a percentage.
+    '''
+
     lab_image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l_channel, _, _ = cv2.split(lab_image)
 
@@ -33,7 +41,13 @@ def measure_pigment_network(image):
 
 
 def measure_blue_veil(image):
-    
+
+    '''
+    This function takes in an image and iterates through all pixels,
+     counting all that have blue as their dominant color,
+     while also making sure that red and green values are similar to each other.
+    '''
+
     height, width, _ = image.shape
     count = 0
 
@@ -48,7 +62,15 @@ def measure_blue_veil(image):
 
 
 def measure_vascular(image):
-    
+
+    '''
+    This function takes in an image and enhances the red channel,
+    afterwards converting it to HSV format, HSV separates color information
+    (hue) from intensity (saturation and value), which is useful for color-based segmentation.
+    Then it isolates ranges of the color red in a mask, returning the number of
+    red pixels in the image.
+    '''
+
     red_channel = image[:, :, 0]
     enhanced_red_channel = exposure.adjust_gamma(red_channel, gamma=1)
     enhanced_image = image.copy()
@@ -69,7 +91,16 @@ def measure_vascular(image):
 
 
 def measure_globules(image):
-    
+
+    '''This function implements the method used in feature extraction
+    algorithms called ‘blob-counting’ which in turn means that it counts
+    regions in an image that differ significantly in properties
+    (like intensity, color, texture) compared to their surrounding area.
+    They are typically connected regions that can be detected using algorithms
+    like the Laplacian of Gaussian (LoG) or Difference of Gaussian (DoG) methods.
+    This function implements LoG. It returns the number of blobs, in our context,
+    modules found in the image.'''
+
     image_gray = rgb2gray(image)
     inverted_image = 1 - image_gray
 
@@ -81,7 +112,12 @@ def measure_globules(image):
 
 
 def measure_streaks(image):
-   
+
+    '''This function analyzes an image to detect streaks by converting it to
+    grayscale, applying adaptive thresholding, and finding contours. It
+    calculates lesion irregularity using the border perimeter and lesion area,
+    returning a metric for streak irregularity.'''
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -97,7 +133,11 @@ def measure_streaks(image):
 
 
 def measure_irregular_pigmentation(image):
-    
+
+    '''This function identifies irregular pigmentation by converting an image to grayscale,
+     applying Otsu's thresholding, and segmenting the regions. It calculates the percentage of
+     irregular pixels compared to the total image area, providing a measure of pigmentation irregularity.'''
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     threshold = threshold_otsu(gray)
     binary = gray > threshold

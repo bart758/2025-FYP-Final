@@ -18,7 +18,7 @@ from scipy.spatial import ConvexHull
 
 
 
-"""Literally just returns the geometrical midpoint of the image in the format [row col]"""
+"""Returns the geometrical midpoint of the image in the format [row col]."""
 def find_midpoint_v1(image):
     
     row_mid = image.shape[0] / 2

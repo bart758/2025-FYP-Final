@@ -75,8 +75,8 @@ def main(csv_path: str, save_path: str, images_path: str = "./data", metadata_pa
     "./data" and metadata path "./metadata.csv" to create the cvs using
     ABCfeatures function.
 
-    Separates the data into x and y parameters for use in clasification,
-    uses [placeholder] to clasify each image as melanoma or not melanoma
+    Separates the data into x and y parameters for use in classification,
+    uses Logistic Regression to classify each image as melanoma or not melanoma
     and saves a csv with the results.
 
     Args:
