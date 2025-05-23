@@ -33,7 +33,7 @@ from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
 from util.evaluator_util import ClassifierEvaluator
-
+from util.optimal_classifier_util import compare_classifiers
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
 
@@ -68,7 +68,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     return features_df
             
 
-def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv"):
+def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", testing: bool = False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -85,7 +85,9 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         features (list[Callable[..., float]]): List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
         images_path (str, optional): directory of images to be used in case the features csv does not exist. Defaults to "./data".
         metadata_path (str, optional): path to metadata.csv from original dataset. Defaults to "./metadata.csv".
+        testing (bool, optional): displays performance of several classifiers over the data. Defaults to False.
     """
+
     # load dataset CSV file
     try:
         data_df = pd.read_csv(csv_path).dropna()
@@ -97,30 +99,33 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
 
     print(data_df.head())
 
-    # select only the baseline features.
+    # select only the baseline features
     baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
     x_all = data_df[baseline_feats]
     y_all = data_df["true_melanoma"]
 
-    # split the dataset into training and testing sets.
-    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
+    if testing:
+        compare_classifiers(x_all, y_all, n_iterations=30)
+    else:
+        # split the dataset into training and testing sets
+        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
 
-    # train the classifier (using logistic regression as an example)
-    clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
-    clf.fit(x_train, y_train)
+        # train the classifier
+        clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
+        clf.fit(x_train, y_train)
 
-    # test the trained classifier
-    y_pred = clf.predict(x_test)
+        y_pred = clf.predict(x_test)
 
-    evaluator = ClassifierEvaluator(clf, x_test, y_test)
-    evaluator.visual()
+        # evaluate the classifier
+        evaluator = ClassifierEvaluator(clf, x_test, y_test)
+        evaluator.express()
 
-    # write test results to CSV.
-    result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
-    result_df['true_label'] = y_test.values
-    result_df['predicted_label'] = y_pred
-    result_df.to_csv(save_path, index=False)
-    print("Results saved to:", save_path)
+        # write test results to a CSV file
+        result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
+        result_df['true_label'] = y_test.values
+        result_df['predicted_label'] = y_pred
+        result_df.to_csv(save_path, index=False)
+        print("Results saved to:", save_path)
 
 
 if __name__ == "__main__":
