@@ -15,8 +15,7 @@ from skimage.color import rgb2hsv
 from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
-
-
+from .image import Image
 
 
 def measure_regression(image):
@@ -32,3 +31,6 @@ def measure_regression(image):
     num_pixels = cv2.countNonZero(mask)
 
     return num_pixels
+
+def is_growing(image: Image) -> bool:
+    return bool(image.metadata["grew"])
