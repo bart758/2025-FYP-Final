@@ -244,14 +244,26 @@ class Image():
     def hair_removed(self) -> np.ndarray:
         """Image with hair removed.
 
-        NOT YET IMPLEMENTED
-
         Returns
         -------
         np.ndarray
             Image array with hair removed.
         """
-        ...
+
+        # Blackhat morphology
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+        blackhat = cv2.morphologyEx(self.gray, cv2.MORPH_BLACKHAT, kernel)
+
+        # Gaussian blur
+        bhg = cv2.GaussianBlur(blackhat, (3, 3), 0)
+
+        # Threshold to create mask 
+        _, mask = cv2.threshold(bhg, 10, 255, cv2.THRESH_BINARY)
+
+        # Inpainting
+        inpainted_image = cv2.inpaint(self.color, mask, 6, cv2.INPAINT_TELEA)
+
+        return inpainted_image
     
     def __lt__(self, other):
         return int(self.metadata["patient_id"][4:]) < int(other.metadata["patient_id"][4:])
