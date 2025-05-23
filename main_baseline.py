@@ -22,10 +22,8 @@
 #     return features_df.dropna()
 import matplotlib
 matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_curve, classification_report
 from sklearn.model_selection import train_test_split
 from collections.abc import Callable
 
@@ -34,6 +32,7 @@ from util.image import Image, importImages
 from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
+from util.evaluator_util import ClassifierEvaluator
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
@@ -112,17 +111,14 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
 
     # train the classifier (using logistic regression as an example)
-    clf = LogisticRegression(max_iter=1000, verbose=1, class_weight='balanced', solver='liblinear')
+    clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
     clf.fit(x_train, y_train)
 
     # test the trained classifier
-    probs = clf.predict_proba(x_test)[:, 1]
-
     y_pred = clf.predict(x_test)
-    acc = accuracy_score(y_test, y_pred)
-    cm = confusion_matrix(y_test, y_pred)
-    print("Test Accuracy:", acc)
-    print("Confusion Matrix:\n", cm)
+
+    evaluator = ClassifierEvaluator(clf, x_test, y_test)
+    evaluator.visual()
 
     # write test results to CSV.
     result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
