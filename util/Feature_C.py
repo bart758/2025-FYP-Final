@@ -16,8 +16,9 @@ from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
 from itertools import combinations
+from .image import Image
 
-def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> float:
+def get_multicolor_rate(image: Image, n: int = 4) -> float:
     """
     Measure color variation in the masked lesion area using clustering.
     Returns normalized color variation in [0, 1] range.
@@ -36,6 +37,8 @@ def get_multicolor_rate(image: np.ndarray, mask: np.ndarray, n: int = 4) -> floa
     float
         Normalized maximum distance between colors in lesion.
     """
+    mask = image.mask_cropped
+    image = image.image_cropped
 
     col_list = image[mask != 0].reshape(-1, 3)
 

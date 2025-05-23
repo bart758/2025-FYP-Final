@@ -15,6 +15,7 @@ from skimage.color import rgb2hsv
 from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
+from .image import Image
 
 
 
@@ -96,7 +97,7 @@ def find_midpoint_v1(image):
 
 
 
-def asymmetry(mask):
+def asymmetry(image: Image)->float:
     """Measures the asymmetry of an image. The function splits the image into 4 sections 
     based on the midpoint. Not like a coordinate plane with 4 quadrants. The parts are not 
     unique. It splits it into upper lower halves and right left halves. Then flips lower 
@@ -106,6 +107,7 @@ def asymmetry(mask):
     pixels and dividing their sum by 2 times the sum of all the pixels of the original mask. 
     (the denominator will always be larger than the numerator )
     """
+    mask = image.mask_cropped
     row_mid, col_mid = find_midpoint_v1(mask)
 
     upper_half = mask[:int(np.ceil(row_mid)), :]

@@ -15,6 +15,7 @@ from skimage.color import rgb2hsv
 from scipy.stats import circmean, circvar, circstd
 from statistics import variance, stdev
 from scipy.spatial import ConvexHull
+from .image import Image
 
 
 
@@ -87,9 +88,10 @@ def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
 
 
 
-def compactness_score(mask):
+def compactness_score(image: Image)->float:
     """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*pi*area)/(perimeter^2). Higher means more compact"""
-    
+
+    mask = image.mask_cropped
     A = np.sum(mask) # calculates the area of the mask - 1 where white, 0 where black, sum is number of white pixels in mask - lession
 
     l = measure.perimeter_crofton(mask)
