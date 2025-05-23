@@ -108,10 +108,10 @@ def asymmetry(mask):
     """
     row_mid, col_mid = find_midpoint_v1(mask)
 
-    upper_half = mask[:ceil(row_mid), :]
-    lower_half = mask[floor(row_mid):, :]
-    left_half = mask[:, :ceil(col_mid)]
-    right_half = mask[:, floor(col_mid):]
+    upper_half = mask[:int(np.ceil(row_mid)), :]
+    lower_half = mask[int(row_mid):, :]
+    left_half = mask[:, :int(np.ceil(col_mid))]
+    right_half = mask[:, int(col_mid):]
 
     flipped_lower = np.flip(lower_half, axis=0)
     flipped_right = np.flip(right_half, axis=1)

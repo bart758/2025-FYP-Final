@@ -173,6 +173,7 @@ cython_debug/
 # Ignore Images in data file and masks
 data/
 masks/
+plots/
 !masks/example.jpg
 
 
