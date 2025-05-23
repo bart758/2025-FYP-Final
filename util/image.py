@@ -154,18 +154,21 @@ class Image():
             cls._metadata_df = pd.read_csv(csv_path, sep=',').set_index('img_id')
 
 
-    def __init__(self, image_path: str):
+    def __init__(self, image_path: str, masks_dir: str = "masks/"):
         """Initialize Image object from image file
 
         Parameters
         ----------
         image_path : str
             Path to image file to be loaded.
+        image_path : str, optional
+            Path to mask file to be loaded. By default, "masks/"
         """
         self.image_id: str = os.path.basename(image_path).split('/')[-1]
         self._image =  readImageFile(image_path)
         self.color: np.ndarray = self._image[0]
         self.gray: np.ndarray = self._image[1]
+        self.mask_path: str = masks_dir
         self._metadata = None
 
     @property
@@ -198,7 +201,7 @@ class Image():
             If image does not have a mask in the .masks/ directory.
         """
         try:
-            return np.where(cv2.imread("".join(["masks/", self.image_id.split(".")[0], "_mask.png"]), cv2.IMREAD_GRAYSCALE) >= 1, 1, 0).astype(np.uint8)
+            return np.where(cv2.imread("".join([self.mask_path, self.image_id.split(".")[0], "_mask.png"]), cv2.IMREAD_GRAYSCALE) >= 1, 1, 0).astype(np.uint8)
         except:
             raise FileNotFoundError(f"Mask for {self.image_id} not found in .masks/ directory.")
         
