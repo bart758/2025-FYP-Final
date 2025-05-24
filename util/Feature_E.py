@@ -32,5 +32,10 @@ def measure_regression(image):
 
     return num_pixels
 
-def is_growing(image: Image) -> bool:
-    return bool(image.metadata["grew"])
+def is_growing(image: Image) -> bool | None:
+    if image.metadata["grew"] == "True":
+        return True
+    elif image.metadata["grew"] == "False":
+        return False
+    else:
+        return None

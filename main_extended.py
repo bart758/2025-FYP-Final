@@ -32,8 +32,11 @@ from util.image import Image, importImages
 from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
+from util.Feature_D import find_max_diameter
+from util.Feature_E import is_growing
 from util.evaluator_util import ClassifierEvaluator
 from util.optimal_classifier_util import compare_classifiers
+
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
 
@@ -45,8 +48,9 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
         pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
     """
     features_df = pd.DataFrame(columns=["patient_id", "true_melanoma"])
+    counter = 0 
 
-    for i_image, image in progressbar(list(enumerate(images))):
+    for i_image, image in progressbar(list(enumerate(images)), "Proccesing features: "):
         features_df.loc[i_image, "patient_id"] = image
 
         for i_func, func in enumerate(extraction_functions):
@@ -61,10 +65,12 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
             try:
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
             except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
+                counter += 1
                 print(e)
                 
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
+    print(f"There was an error proccessing {counter} images.")
     return features_df
             
 
@@ -94,7 +100,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     except FileNotFoundError:
         images: list[Image] = importImages(images_path, metadata_path)
         data_df = extractFeatures(images, features)
-        data_df.to_csv("features.csv", index=False)
+        data_df.to_csv(csv_path, index=False)
         data_df = pd.read_csv(csv_path).dropna()
 
     print(data_df.head())
@@ -130,9 +136,9 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
 
 if __name__ == "__main__":
     
-    features = [asymmetry, compactness_score, get_multicolor_rate]
-    csv_path = "features.csv"
-    save_path = "result/result_baseline.csv"
+    features = [asymmetry, compactness_score, get_multicolor_rate, find_max_diameter, is_growing]
+    csv_path = "features_extended.csv"
+    save_path = "result/result_extended.csv"
 
-    main(csv_path, save_path, features)
+    main(csv_path, save_path, features, testing=True)
 

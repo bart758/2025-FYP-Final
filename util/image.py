@@ -121,7 +121,7 @@ class Image():
             Pandas dataframe of the metadata csv.
 
     Raises:
-        ValueError: If metadata_path not set when metadata is attempted to be loaded.
+        ValueError: If metadata_path not set when metadata is attempted to be loaded. Or mask is empty.
         FileNotFoundError: Mask for image not found.
     """
 
