@@ -36,6 +36,7 @@ from util.Feature_D import find_max_diameter
 from util.Feature_E import is_growing
 from util.evaluator_util import ClassifierEvaluator
 from util.optimal_classifier_util import compare_classifiers
+from util.hair_feature_util import hair_import, hair_ratio
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
@@ -47,6 +48,13 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     Returns:
         pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
     """
+
+    try:
+        hair_df = pd.read_csv(hair_csv_path).dropna()
+        hair_df.set_index('ImageID', inplace=True)
+    except FileNotFoundError:
+        hair_df = hair_import(images, hair_csv_path)
+
     features_df = pd.DataFrame(columns=["patient_id", "true_melanoma"])
     counter = 0 
 
@@ -61,6 +69,8 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
             for arg in args:
                 if arg == "image":
                     variables.append(image)
+                if arg == "hair_df":
+                    variables.append(hair_df)
 
             try:
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
@@ -74,7 +84,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     return features_df
             
 
-def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", testing: bool = False):
+def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", hair_csv_path: str = './norm_region_hair_amount.csv', testing: bool = False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -102,8 +112,6 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         data_df = extractFeatures(images, features)
         data_df.to_csv(csv_path, index=False)
         data_df = pd.read_csv(csv_path).dropna()
-
-    print(data_df.head())
 
     # select only the baseline features
     baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
@@ -136,9 +144,10 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
 
 if __name__ == "__main__":
     
-    features = [asymmetry, compactness_score, get_multicolor_rate, find_max_diameter, is_growing]
+    features = [asymmetry, compactness_score, get_multicolor_rate, find_max_diameter, is_growing, hair_ratio]
     csv_path = "features_extended.csv"
     save_path = "result/result_extended.csv"
+    hair_csv_path = "norm_region_hair_amount.csv"
 
-    main(csv_path, save_path, features, testing=True)
+    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv", testing=False)
 
