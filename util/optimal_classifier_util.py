@@ -22,8 +22,7 @@ def compare_classifiers(X, y, n_iterations=30, test_size=0.2, random_state=42):
     base_classifiers = {
         "Decision Tree": DecisionTreeClassifier(random_state=0),
         "K-Nearest Neighbors": KNeighborsClassifier(),
-        # "Logistic Regression": LogisticRegression(max_iter=1000, solver='liblinear', penalty='l1', class_weight='balanced'),
-        "Logistic Regression": LogisticRegression(max_iter=1000),
+        "Logistic Regression": LogisticRegression(max_iter=1000, solver='liblinear', penalty='l1', class_weight='balanced'),
         "Random Forest": RandomForestClassifier(random_state=0),
     }
 
@@ -42,8 +41,7 @@ def compare_classifiers(X, y, n_iterations=30, test_size=0.2, random_state=42):
 
     for i in range(n_iterations):
         x_train, x_test, y_train, y_test = train_test_split(
-            # X, y, test_size=test_size, stratify=y, random_state=random_state + i
-            X, y, test_size=test_size, random_state=random_state + i
+            X, y, test_size=test_size, stratify=y, random_state=random_state + i
         )
         for name, clf in base_classifiers.items():
             model = clone(clf)
