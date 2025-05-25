@@ -72,7 +72,7 @@ class ClassifierEvaluator:
     def _plot_confusion_matrix(self):
         cm = confusion_matrix(self.y_test, self.y_pred)
         plt.figure(figsize=(5, 4))
-        sns.heatmap(cm, annot=True, fmt='d', cmap="Blues", xticklabels=["Non-Melanoma", "Melanoma"], yticklabels=["Non-Melanoma", "Melanoma"])
+        sns.heatmap(cm, annot=True, fmt='d', cmap=['#FFA500', '#fabe50', '#fcd48b', '#fce9c5', '#fff5e3'], xticklabels=["Non-Melanoma", "Melanoma"], yticklabels=["Non-Melanoma", "Melanoma"])
         plt.title("Confusion Matrix")
         plt.xlabel("Predicted")
         plt.ylabel("True")
@@ -81,7 +81,7 @@ class ClassifierEvaluator:
     def _plot_roc_curve(self):
         fpr, tpr, _ = roc_curve(self.y_test, self.y_prob)
         plt.figure(figsize=(6, 4))
-        plt.plot(fpr, tpr, label=f"AUC = {self.get_metrics()['roc_auc']:.2f}")
+        plt.plot(fpr, tpr, label=f"AUC = {self.get_metrics()['roc_auc']:.2f}", c='#FFA500')
         plt.plot([0, 1], [0, 1], linestyle='--')
         plt.title("ROC Curve")
         plt.xlabel("False Positive Rate")
@@ -92,7 +92,7 @@ class ClassifierEvaluator:
     def _plot_precision_recall_curve(self):
         precision, recall, _ = precision_recall_curve(self.y_test, self.y_prob)
         plt.figure(figsize=(6, 4))
-        plt.plot(recall, precision, color="blue")
+        plt.plot(recall, precision, color='#FFA500')
         plt.title("Precision-Recall Curve")
         plt.xlabel("Recall")
         plt.ylabel("Precision")
