@@ -1,4 +1,4 @@
-from .img_util import hair_removed
+from .img_util import get_hair_ratio
 from .image import Image
 import pandas as pd
 def hair_ratio(image: Image, hair_df: pd.DataFrame) -> float:
@@ -10,7 +10,7 @@ def hair_import(images: list[Image], save_path: str) -> pd.DataFrame:
 
     for i, image in enumerate(images):
         numbers.loc[i, 'ImageID'] = image
-        numbers.loc[i, 'Ratio'] = hair_removed(image)
+        numbers.loc[i, 'Ratio'] = get_hair_ratio(image)
         numbers.loc[i, 'Region'] = image.metadata['region']
 
     nb_summary = numbers.groupby(['Region']).describe()

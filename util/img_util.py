@@ -2,6 +2,7 @@ import random
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+from .image import Image
 
 def saveImageFile(img_rgb: np.ndarray, file_path: str):
     """Saves image to file.
@@ -27,7 +28,7 @@ def saveImageFile(img_rgb: np.ndarray, file_path: str):
         print(f"Error saving the image: {e}")
         return False
 
-def hair_removed(image, cfg=None):
+def get_hair_ratio(image: Image | np.ndarray, cfg=None):
     """
     Calculates the ratio of hair pixels in a single image.
 
@@ -56,7 +57,11 @@ def hair_removed(image, cfg=None):
 
         cfg = CFG()
 
-    img_orig = image.color
+    if isinstance(image, Image):
+        img_orig = image.color
+    elif isinstance(image, np.ndarray):
+        img_orig = image
+    
     if img_orig.ndim == 3:
         img = img_orig.mean(-1).astype(np.uint8)
     else:

@@ -103,3 +103,179 @@ class ClassifierEvaluator:
         if not self.metrics:
             self.compute_metrics()
         return self.metrics
+
+import numpy as np
+import pandas as pd
+import cv2
+from sklearn.model_selection import train_test_split
+import os
+from .img_util import get_hair_ratio
+from .image import readImageFile
+from .progressbar import progressbar
+
+def EvaluateHairFeature(n_rus: int = 100, plotting: bool = True, plot_save_path: str = "plots", hair_annotations_path: str = "result/result.csv", 
+                        directory: str = "data/Ol_data/", config: list[int] = [100, 220, 150, 10, 0.25, 0.15]) -> None:
+    """Evaluates and visualizes the accuracy of the hair feature.
+
+    Parameters
+    ----------
+    n_rus : int, optional
+        Number of times that the accuracy will be calculated, by default 100
+    plotting : bool, optional
+        Enables plots, by default True
+    plot_save_path : str, optional
+        Save path for plot. Must be "save_path" withou slash at the end, by default "plots"
+    hair_annotations_path : str, optional
+        Path to manual hair annotations from the mndatory exercise, must contain: img_id | Rating_1, by default "result/result.csv"
+    directory : str, optional
+        Directory for images matching the dataset, by default "data/Ol_data/"
+    config : list[int], optional
+        Config for hair ratio calculation threshold, by default [100, 220, 150, 10, 0.25, 0.15]
+    """
+
+    class CFG:
+        """Config file for Hair ratio calculation threshholds.
+        """
+        def __init__(self, x: list[int]):
+            self.edge_low_threshold = x[0]
+            self.edge_high_threshold = x[1]
+            self.dark_spot_threshold = x[2]
+            self.linelength_threshold = x[3]
+            self.divergence_threshold = x[4]
+            self.patchiness_threshold = x[5]
+    
+    cfg = CFG(config)
+
+    def GetRatios(data_df: pd.DataFrame, images: list[tuple[str, np.ndarray]],  cfg: CFG) -> pd.DataFrame:
+        """Get ratio for each image.
+
+        Uses the get_har_ratio function to calculate the ratio of the hair coverage in the image.
+
+        Parameters
+        ----------
+        data_df : pd.DataFrame
+            Hair annotations from Mandatory assignment, columns: img_id | Rating_1 | ...
+        images : list[tuple[str, np.ndarray]]
+            List of img_id and corresponding image data
+        cfg : CFG
+            Cofig for hair ratio calculation
+
+        Returns
+        -------
+        pd.DataFrame
+            Same as input data_df + column Ratio
+        """
+        hair_df = pd.DataFrame()
+
+        for img_id, image in progressbar(images, "Calculating ratios: "):
+            hair_df.loc[img_id, 'Ratio'] = get_hair_ratio(image, cfg)
+        
+        hair_df.index.name = "img_id"
+        hair_df = hair_df.merge(data_df, on="img_id", how="inner").drop(["Group_ID", "Unnamed: 7"], axis=1)
+
+        return hair_df
+    
+    def CalculateAcuracy(hair_df: pd.DataFrame) -> tuple[float, pd.DataFrame]:
+        """Calculates accuracy of hair ratio calculation by comparing with manual annotions from mandatory exercise.
+
+        Splits data into training and testin data. Gets threshold to split the data by using the train set and
+        calculates the accuracy on test set.
+
+        Parameters
+        ----------
+        hair_df : pd.DataFrame
+            Must contain columns: img_id | Rating_1 | Ratio
+
+        Returns
+        -------
+        float
+            Accuracy calculated as #correctly_predicted_label/n_data
+        pd.DataFrame
+            Test data + columns: predicted_rating | correct prediction
+        """
+        
+        X_train, X_test, y_train, y_test = train_test_split(hair_df["Ratio"], hair_df["Rating_1"])
+
+        har_df_train = pd.merge(X_train, y_train, on="img_id", how="inner")
+        hair_df_test = pd.merge(X_test, y_test, on="img_id", how="inner")
+
+        hair_df_summary = har_df_train.groupby(by="Rating_1").describe()
+
+        t_0 = hair_df_summary.loc[0.0, ("Ratio", "75%")]
+        t_1 = hair_df_summary.loc[2.0, ("Ratio", "25%")]
+
+        hair_df_test["predicted_rating"] = 2
+        hair_df_test.loc[hair_df_test["Ratio"] <= t_0, "predicted_rating"] = 0
+        hair_df_test.loc[(hair_df_test["Ratio"] >= t_0) & (hair_df_test["Ratio"] <= t_1), "predicted_rating"] = 1
+        hair_df_test.loc[hair_df_test["Ratio"] >= t_1, "predicted_rating"] = 2
+
+        hair_df_test["correct prediction"] = False
+        hair_df_test["correct prediction"] = hair_df_test["Rating_1"] == hair_df_test["predicted_rating"]
+        accuracy = sum(hair_df_test["correct prediction"])/len(hair_df_test["correct prediction"])
+        return accuracy, hair_df_test
+    
+    def Plot(hair_df: pd.DataFrame, plot_save_path: str, accuracies: list[float]) -> None:
+        """Plots accuracy information.
+
+        Plots a boxplot of ratio distribution for each manual annotation lable for one accuracy run, 
+        also plots the distribution of accuracy over n_runs.s
+
+        Parameters
+        ----------
+        hair_df : pd.DataFrame
+            Must contain columns: Rating_1 | Ratio
+        plot_save_path : str
+            Save path for plot. Must be "save_path" withou slash at the end.
+        accuracies : list[float]
+            List of accuracies over n_runs
+        """
+        plt.rcParams.update({'font.size': 15})
+
+        zeros = hair_df[hair_df["Rating_1"] == 0]["Ratio"]
+        ones = hair_df[hair_df["Rating_1"] == 1]["Ratio"]
+        twos = hair_df[hair_df["Rating_1"] == 2]["Ratio"]
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 2, 1)
+        plt.title("Hair ratio in test set by manual category")
+        plt.xlabel("Manual hair category")
+        plt.ylabel("Hair ratio")
+        plt.text(0.6, 0.85, f"Accuracy: {accuracies[0]:.2f}%")
+        plt.boxplot([zeros, ones, twos])
+        plt.xticks(ticks=[1, 2, 3],labels=["No hair", "Some hair", "A lot of hair"])
+
+        plt.subplot(1, 2, 2)
+        plt.title(f"Accuracy distribuion over {len(accuracies)} runs")
+        plt.boxplot(accuracies)
+        plt.ylabel("Accuray in %")
+        plt.xticks(ticks=[])
+
+        plt.tight_layout()
+        plt.savefig(f"{plot_save_path}/003-Hair_feat_eval.pdf" , bbox_inches='tight')
+        plt.show()
+
+    # Read dataset
+    data_df = pd.read_csv(hair_annotations_path)
+    data_df.set_index("img_id", inplace=True)
+
+    # Import Images
+    images: list[tuple[str, np.ndarray]] = list()
+    image_paths = [os.path.join(directory, f) for f in os.listdir(directory) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff'))]
+    loaded: int = len(image_paths)
+
+    for path in progressbar(image_paths, "Importing images:"):
+        img_id = path.split("/")[-1]
+        try:
+            data_df.loc[img_id]
+        except KeyError:
+            loaded -= 1
+            continue
+        images.append((img_id, readImageFile(path)[0]))
+    print(f"Loaded {loaded} images, contained in dataset.")
+
+    # Run computation
+    hair_df = GetRatios(data_df, images, cfg)
+    accuracies: list[tuple[float, pd.DataFrame]] = list()
+    for _ in progressbar(list(range(n_rus)), f"Running accuracy calculation: "):
+        accuracies.append(CalculateAcuracy(hair_df))
+    if plotting:
+        Plot(accuracies[0][1], plot_save_path, [round(x[0]*100, 2) for x in accuracies])
