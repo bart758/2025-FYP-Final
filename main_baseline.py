@@ -81,7 +81,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
 
     Args:
         csv_path (str): path to the features csv with columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
-        save_path (str): save path for result csv with columns image_id | true_label | predicted_label
+        save_path (str): save path for result csv with columns image_id | true_label | predicted_label | predicted_probability
         features (list[Callable[..., float]]): List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
         images_path (str, optional): directory of images to be used in case the features csv does not exist. Defaults to "./data".
         metadata_path (str, optional): path to metadata.csv from original dataset. Defaults to "./metadata.csv".
@@ -114,6 +114,9 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
         clf.fit(x_train, y_train)
 
+        # test the trained classifier
+        probs = clf.predict_proba(x_test)[:, 1]
+
         y_pred = clf.predict(x_test)
 
         # evaluate the classifier
@@ -124,6 +127,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
         result_df['true_label'] = y_test.values
         result_df['predicted_label'] = y_pred
+        result_df['predicted_probability'] = probs
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
 
