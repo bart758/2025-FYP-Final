@@ -101,6 +101,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
     result_df['true_label'] = y_test.values
     result_df['predicted_label'] = y_pred
+    result_df['predicted_probability'] = probs
     result_df.to_csv(save_path, index=False)
     print("Results saved to:", save_path)
 
