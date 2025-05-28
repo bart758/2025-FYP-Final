@@ -77,7 +77,7 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
 
-    return clf
+        return clf
 
 def compare_classifiers(X, y, n_iterations=100, test_size=0.2, random_state=42):
     '''
@@ -137,4 +137,5 @@ def compare_classifiers(X, y, n_iterations=100, test_size=0.2, random_state=42):
     plt.gca().invert_yaxis() # puts the best score at the top
     plt.grid(True, axis='x', linestyle='--', alpha=0.6)
     plt.tight_layout()
+    # plt.savefig('plots/classifiers_baseline.pdf') # save figure, if necessary
     plt.show()
