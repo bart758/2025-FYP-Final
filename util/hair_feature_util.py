@@ -3,7 +3,8 @@ from .progressbar import progressbar
 from .image import Image
 import pandas as pd
 
-def hair_import(images: list[Image], save_path: str, categorize: bool = False, cat_thresholds: tuple[float, float] = (0.025933159722222224, 0.18871900770399305)) -> pd.DataFrame:
+def hair_import(images: list[Image], save_path: str, categorize: bool = False, 
+                cat_thresholds: tuple[float, float] = (0.025933159722222224, 0.18871900770399305)) -> pd.DataFrame:
     """Compute hair ratio from list of Image objects.
 
     Uses the get_hair_ratio function to compute hair ratio and prepares the data for the hair_ratio function.

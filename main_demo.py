@@ -4,7 +4,7 @@ from util.extract_features import ImportFeatures
 from util.classifier_util import Classify
 
 def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", 
-         hair_csv_path: str = './norm_region_hair_amount.csv', multiple:bool = False, testing: bool = False, plots: bool= False):
+         multiple:bool = False, testing: bool = False, plots: bool= False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -51,4 +51,4 @@ if __name__ == "__main__":
     save_path = "result/result_extended.csv"
     hair_csv_path = "norm_region_hair_amount.csv"
 
-    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv")
+    main(csv_path, save_path, features)

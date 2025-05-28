@@ -12,8 +12,37 @@ from sklearn.metrics import recall_score
 from sklearn.base import clone
 from .evaluator_util import ClassifierEvaluator
 
-def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False, plots: bool = False, testing: bool= False) -> LogisticRegression:
-    
+def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False, extended: bool = False,  
+             plots: bool = False, testing: bool= False) -> LogisticRegression | RandomForestClassifier:
+    """Run Logistic Regression or Random Forest classification depending on "multiple" and save results.
+
+    If "multiple" is True runs Random Forest multiple classification in an attempt to classify all diagnostics, 
+    else runs Logistic Regression to classify Melanoma or Non-Melanoma
+
+    Parameters
+    ----------
+    x_all : pd.DataFrame
+        All feature columns.
+    y_all : pd.DataFrame
+        All ground truth columns
+    save_path : str
+        Save path for results csv
+    data_df : pd.DataFrame
+        All data from Feature import
+    multiple : bool, optional
+        Run multiple classification, by default False
+    extended : bool, optional
+        Running extended model, by default False
+    plots : bool, optional
+        Plot classifier performance, by default False
+    testing : bool, optional
+        Get testing data for different classifiers, by default False
+
+    Returns
+    -------
+    LogisticRegression | RandomForestClassifier
+        Classification model.
+    """
     if testing:
         compare_classifiers(x_all, y_all, n_iterations=30)
     else:
@@ -31,7 +60,7 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         y_pred = clf.predict(x_test)
 
         # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
+        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple, extended=extended)
         evaluator.express()
 
         # write test results to a CSV file

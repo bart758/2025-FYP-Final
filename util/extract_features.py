@@ -51,12 +51,37 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     print(f"There was an error proccessing {counter} images.")
     return features_df
 
-def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features: list[Callable[[Image], float]], multiple: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features: list[Callable[[Image], float]], 
+                   hair_csv_path: str = './norm_region_hair_amount.csv', multiple: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Loads or extracts features.
+
+    If there is a csv with "csv_path" loads that, if not extracts features from images at "images_path" and saves it as csv at "csv_path"
+
+    Parameters
+    ----------
+    csv_path : str
+        Path to features csv
+    images_path : str
+        Path to images
+    metadata_path : str
+        Path to dataset metadata
+    features : list[Callable[[Image], float]]
+        List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
+    hair_csv_path : str, optional
+        Path to precomputed hair ratios, by default './norm_region_hair_amount.csv'
+    multiple : bool, optional
+        True if multiple classification, by default False
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+        (All features, All labels, Complete dataset)
+    """
     try:
         data_df = pd.read_csv(csv_path).dropna()
     except FileNotFoundError:
         images: list[Image] = importImages(images_path, metadata_path)
-        data_df = extractFeatures(images, features)
+        data_df = extractFeatures(images, features, hair_csv_path)
         data_df.to_csv(csv_path, index=False)
         data_df = pd.read_csv(csv_path).dropna()
 

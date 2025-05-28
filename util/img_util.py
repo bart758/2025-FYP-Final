@@ -2,7 +2,19 @@ import cv2 as cv
 import numpy as np
 from .image import Image
 
-def find_midpoint_v1(image):
+def find_midpoint_v1(image: np.ndarray) -> tuple[float, float]:
+    """Finds midpoint in image
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Image array
+
+    Returns
+    -------
+    tuple[float, float]
+        (row_mid, col_mid)
+    """
     
     row_mid = image.shape[0] / 2
     col_mid = image.shape[1] / 2
@@ -32,7 +44,7 @@ def saveImageFile(img_rgb: np.ndarray, file_path: str):
         print(f"Error saving the image: {e}")
         return False
 
-def get_hair_ratio(image: Image | np.ndarray, cfg=None):
+def get_hair_ratio(image: Image | np.ndarray, cfg=None) -> float:
     """
     Calculates the ratio of hair pixels in a single image.
 
