@@ -47,7 +47,7 @@ class ClassifierEvaluator:
         self.x_test = x_test
         self.y_test = y_test
         self.avrage = "weighted" if multiple else "binary"
-        self.roc_avrage = "macro" if multiple else "weighted"
+        self.roc_avrage = "weighted" if multiple else "macro"
         self.multi_class = "ovo" if multiple else "raise"
         self.y_pred = clf.predict(x_test)
         self.y_prob = clf.predict_proba(x_test) if multiple else clf.predict_proba(x_test)[:, 1]

@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from collections.abc import Callable
 from util.evaluator_util import ClassifierEvaluator
@@ -75,7 +76,8 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
 
     # train the classifier
-    clf = LogisticRegression(max_iter=2000, verbose=0, class_weight='balanced', solver= "liblinear", penalty='l1')
+    # clf = LogisticRegression(max_iter=2000, verbose=0, class_weight='balanced', solver= "liblinear", penalty='l1')
+    clf = RandomForestClassifier(class_weight='balanced')
 
     clf.fit(x_train, y_train)
 
