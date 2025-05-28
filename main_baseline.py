@@ -62,7 +62,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
             except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
                 print(e)
-                
+        features_df.loc[i_image, "diagnostic"] = image.metadata["diagnostic"]
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
     return features_df

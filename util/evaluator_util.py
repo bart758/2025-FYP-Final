@@ -13,6 +13,7 @@ class ClassifierEvaluator:
 
     Features:
         - Supports both "express" (text-based) and "visual" (plot-based) evaluation modes.
+        -Supports both binary classification as well as well as multi class classification
         - Computes standard performance metrics: accuracy, precision, recall, F1-score, and ROC AUC.
         - Generates classification report and confusion matrix.
         - In "visual" mode, plots:
@@ -28,6 +29,7 @@ class ClassifierEvaluator:
         The test data.
     y_test
         Correct labels of the test data.
+    multiple (False: optional) a paremeter to state wherher the model evaluated classifies into multiple classes or not
 
     Returns
     -------
@@ -40,20 +42,23 @@ class ClassifierEvaluator:
         evaluator.evaluate(mode="express")  | Prints metrics to terminal
         evaluator.evaluate(mode="visual")   | Displays evaluation plots
     '''
-    def __init__(self, clf, x_test, y_test):
+    def __init__(self, clf, x_test, y_test, multiple = False):
         self.clf = clf
         self.x_test = x_test
         self.y_test = y_test
+        self.avrage = "weighted" if multiple else "binary"
+        self.roc_avrage = "macro" if multiple else "weighted"
+        self.multi_class = "ovo" if multiple else "raise"
         self.y_pred = clf.predict(x_test)
-        self.y_prob = clf.predict_proba(x_test)[:, 1]
+        self.y_prob = clf.predict_proba(x_test) if multiple else clf.predict_proba(x_test)[:, 1]
         self.metrics = {}
 
     def compute_metrics(self):
         self.metrics["accuracy"] = accuracy_score(self.y_test, self.y_pred)
-        self.metrics["precision"] = precision_score(self.y_test, self.y_pred, zero_division=0)
-        self.metrics["recall"] = recall_score(self.y_test, self.y_pred, zero_division=0)
-        self.metrics["f1"] = f1_score(self.y_test, self.y_pred, zero_division=0)
-        self.metrics["roc_auc"] = roc_auc_score(self.y_test, self.y_prob)
+        self.metrics["precision"] = precision_score(self.y_test, self.y_pred, zero_division=0, average=self.avrage)
+        self.metrics["recall"] = recall_score(self.y_test, self.y_pred, zero_division=0, average=self.avrage)
+        self.metrics["f1"] = f1_score(self.y_test, self.y_pred, zero_division=0, average=self.avrage)
+        self.metrics["roc_auc"] = roc_auc_score(self.y_test, self.y_prob, average=self.roc_avrage, multi_class=self.multi_class)
 
     def express(self):
         self.compute_metrics()
