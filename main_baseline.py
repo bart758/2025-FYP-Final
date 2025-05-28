@@ -24,6 +24,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from collections.abc import Callable
 
@@ -34,6 +35,7 @@ from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
 from util.evaluator_util import ClassifierEvaluator
 from util.optimal_classifier_util import compare_classifiers
+
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
 
@@ -62,13 +64,14 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
                 features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
             except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
                 print(e)
+
         features_df.loc[i_image, "diagnostic"] = image.metadata["diagnostic"]
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
     return features_df
             
 
-def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", testing: bool = False):
+def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", multiple: bool = False, testing: bool = False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -102,16 +105,17 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     # select only the baseline features
     baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
     x_all = data_df[baseline_feats]
-    y_all = data_df["true_melanoma"]
+    y_all = data_df["diagnostic"] if multiple else data_df["true_melanoma"]
 
     if testing:
         compare_classifiers(x_all, y_all, n_iterations=30)
     else:
         # split the dataset into training and testing sets
-        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
+        stratification = None if multiple else y_all
+        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=stratification)
 
         # train the classifier
-        clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
+        clf = RandomForestClassifier(class_weight='balanced')  if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
         clf.fit(x_train, y_train)
 
         # test the trained classifier
@@ -120,7 +124,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         y_pred = clf.predict(x_test)
 
         # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test)
+        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
         evaluator.express()
 
         # write test results to a CSV file
@@ -128,6 +132,8 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
         result_df['true_label'] = y_test.values
         result_df['predicted_label'] = y_pred
         result_df['predicted_probability'] = probs
+        if multiple:
+            save_path = "result/result_baseline_multi.csv"
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
 
@@ -137,6 +143,7 @@ if __name__ == "__main__":
     features = [asymmetry, compactness_score, get_multicolor_rate]
     csv_path = "features.csv"
     save_path = "result/result_baseline.csv"
+    save_path_for_multiple = "result/result_baseline_multi.csv"
 
     main(csv_path, save_path, features)
 
