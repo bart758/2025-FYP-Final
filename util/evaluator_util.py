@@ -8,6 +8,7 @@ from sklearn.metrics import (
 import numpy as np
 import pandas as pd
 import cv2
+import umap
 from sklearn.model_selection import train_test_split
 import os
 from .img_util import get_hair_ratio
@@ -285,3 +286,56 @@ def EvaluateHairFeature(n_rus: int = 100, plotting: bool = True, plot_save_path:
         accuracies.append(CalculateAcuracy(hair_df))
     if plotting:
         Plot(accuracies[0][1], plot_save_path, [round(x[0]*100, 2) for x in accuracies])
+
+def PlotProbability_vs_FeatureSpace():
+    plt.rcParams.update({'font.size': 6*3})
+
+    features = pd.read_csv("features_extended.csv")[["patient_id", "feat_A", "feat_B", "feat_C", "feat_D", "feat_E", "feat_F"]]
+    pred_prob = pd.read_csv("result/result_extended.csv")[["patient_id", "predicted_probability"]]
+    true_label = pd.read_csv("features_extended.csv")[["patient_id", "true_melanoma"]]
+
+    data = features.merge(pred_prob, "inner", on="patient_id")
+    data = data.merge(true_label, "inner", on="patient_id")
+
+    data.set_index("patient_id", inplace=True)
+
+    umap_model = umap.UMAP(n_neighbors=100, min_dist=0.1, n_components=1)
+    X_umap = umap_model.fit_transform(data[["feat_A", "feat_B", "feat_C", "feat_D", "feat_E", "feat_F"]])
+
+    data["umap"] = X_umap
+
+    melanoma = data.loc[data["true_melanoma"] == True, :]
+    non_melanoma = malanoma = data.loc[data["true_melanoma"] == False, :]
+
+    plt.figure(figsize=(10, 6))
+    plt.subplot(1,2,2)
+    plt.scatter(non_melanoma["umap"], non_melanoma["predicted_probability"], c="#333333", label="Non-melanoma")
+    plt.scatter(melanoma["umap"], melanoma["predicted_probability"], c="#FFA500", label="Melanoma")
+    plt.xlabel('Projected Feature Space')
+    plt.yticks(ticks=[])
+    plt.title('UMAP of Extended Model')
+
+    features = pd.read_csv("features_baseline.csv")[["patient_id", "feat_A", "feat_B", "feat_C"]]
+    pred_prob = pd.read_csv("result/result_baseline.csv")[["patient_id", "predicted_probability"]]
+    true_label = pd.read_csv("features_baseline.csv")[["patient_id", "true_melanoma"]]
+
+    data = features.merge(pred_prob, "inner", on="patient_id")
+    data = data.merge(true_label, "inner", on="patient_id")
+
+    data.set_index("patient_id", inplace=True)
+
+    umap_model = umap.UMAP(n_neighbors=100, min_dist=0.1, n_components=1)
+    X_umap = umap_model.fit_transform(data[["feat_A", "feat_B", "feat_C"]])
+
+    data["umap"] = X_umap
+
+    melanoma = data.loc[data["true_melanoma"] == True, :]
+    non_melanoma = malanoma = data.loc[data["true_melanoma"] == False, :]
+
+    plt.subplot(1,2,1)
+    plt.scatter(non_melanoma["umap"], non_melanoma["predicted_probability"], c="#333333", label="Non-melanoma")
+    plt.scatter(melanoma["umap"], melanoma["predicted_probability"], c="#FFA500", label="Melanoma")
+    plt.xlabel('Projected Feature Space')
+    plt.ylabel('Melanoma Probability')
+    plt.title('UMAP of Baseline Model')
+    plt.savefig("plots/007-UMAP-Baseline_and_extended-model.pdf", bbox_inches='tight')
