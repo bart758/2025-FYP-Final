@@ -90,6 +90,7 @@ class ClassifierEvaluator:
         plt.xlabel("Predicted")
         plt.ylabel("True")
         plt.tight_layout()
+        # plt.savefig('plots/confusion_final_final.pdf') # save figure separately
 
     def _plot_roc_curve(self):
         fpr, tpr, _ = roc_curve(self.y_test, self.y_prob)
@@ -101,6 +102,7 @@ class ClassifierEvaluator:
         plt.ylabel("True Positive Rate")
         plt.legend()
         plt.tight_layout()
+        # plt.savefig('plots/roc_final_final.pdf') # save figure separately
 
     def _plot_precision_recall_curve(self):
         precision, recall, _ = precision_recall_curve(self.y_test, self.y_prob)

@@ -47,7 +47,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
 
     x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, hair_csv_path, multiple)
 
-    Classify(x_all, y_all, save_path, data_df, multiple, True, plots, testing)
+    Classify(x_all, y_all, save_path, data_df, multiple=False, extended=True, plots=True, testing=False)
 
 
 if __name__ == "__main__":

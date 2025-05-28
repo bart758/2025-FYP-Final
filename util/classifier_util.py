@@ -12,8 +12,9 @@ from sklearn.metrics import recall_score
 from sklearn.base import clone
 from .evaluator_util import ClassifierEvaluator
 
+
 def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False, extended: bool = False,  
-             plots: bool = False, testing: bool= False) -> LogisticRegression | RandomForestClassifier:
+             plots: bool = False, testing: bool = False) -> LogisticRegression | RandomForestClassifier:
     """Run Logistic Regression or Random Forest classification depending on "multiple" and save results.
 
     If "multiple" is True runs Random Forest multiple classification in an attempt to classify all diagnostics, 
@@ -51,7 +52,7 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=stratification)
 
         # train the classifier
-        clf = RandomForestClassifier(class_weight='balanced')  if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
+        clf = RandomForestClassifier(class_weight='balanced') if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
         clf.fit(x_train, y_train)
 
         # test the trained classifier
@@ -60,8 +61,11 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         y_pred = clf.predict(x_test)
 
         # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple, extended=extended)
-        evaluator.express()
+        evaluator = ClassifierEvaluator(clf, x_test, y_test)
+        if plots:
+            evaluator.visual()
+        else:
+            evaluator.express()
 
         # write test results to a CSV file
         result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
@@ -72,10 +76,6 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
             save_path = "result/result_extended_multi.csv"
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
-
-    if plots:
-        ce = ClassifierEvaluator(clf, x_test, y_test)
-        ce.visual()
 
     return clf
 
