@@ -5,6 +5,14 @@ from sklearn.metrics import (
     roc_auc_score, confusion_matrix, roc_curve,
     precision_recall_curve, classification_report
 )
+import numpy as np
+import pandas as pd
+import cv2
+from sklearn.model_selection import train_test_split
+import os
+from .img_util import get_hair_ratio
+from .image import readImageFile
+from .progressbar import progressbar
 
 
 class ClassifierEvaluator:
@@ -108,15 +116,6 @@ class ClassifierEvaluator:
         if not self.metrics:
             self.compute_metrics()
         return self.metrics
-
-import numpy as np
-import pandas as pd
-import cv2
-from sklearn.model_selection import train_test_split
-import os
-from .img_util import get_hair_ratio
-from .image import readImageFile
-from .progressbar import progressbar
 
 def EvaluateHairFeature(n_rus: int = 100, plotting: bool = True, plot_save_path: str = "plots", hair_annotations_path: str = "result/result.csv", 
                         directory: str = "data/Ol_data/", config: list[int] = [100, 220, 150, 10, 0.25, 0.15]) -> None:

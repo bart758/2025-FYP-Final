@@ -1,7 +1,8 @@
 import sys
 import time
+from typing import Iterable
 
-def progressbar(it, prefix="", size=60, out=sys.stdout): # Python3.6+
+def progressbar(it: Iterable, prefix: str ="", size: int =60, out=sys.stdout): # Python3.6+
     count = len(it)
     start = time.time() # time estimate start
     def show(j):

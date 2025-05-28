@@ -1,8 +1,12 @@
-import random
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
 from .image import Image
+
+def find_midpoint_v1(image):
+    
+    row_mid = image.shape[0] / 2
+    col_mid = image.shape[1] / 2
+    return row_mid, col_mid
 
 def saveImageFile(img_rgb: np.ndarray, file_path: str):
     """Saves image to file.

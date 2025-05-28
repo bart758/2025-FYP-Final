@@ -1,96 +1,22 @@
-import cv2
 import numpy as np
-from math import sqrt, floor, ceil, nan, pi
-from skimage import color, exposure
-from skimage.color import rgb2gray
-from skimage.feature import blob_log
-from skimage.filters import threshold_otsu
-from skimage.measure import label, regionprops
-from skimage.transform import resize
-from skimage.transform import rotate
-from skimage import morphology, measure
-from sklearn.cluster import KMeans
-from skimage.segmentation import slic
-from skimage.color import rgb2hsv
-from scipy.stats import circmean, circvar, circstd
-from statistics import variance, stdev
-from scipy.spatial import ConvexHull
+from skimage import measure
 from .image import Image
 
-
-
-def measure_streaks(image):
-    """
-    This function analyzes an image to detect streaks by converting it to grayscale, applying adaptive thresholding,
-    and finding contours. It calculates lesion irregularity using the border perimeter and lesion area, returning
-    a metric for streak irregularity.
-    """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    lesion_area = cv2.contourArea(contours[0])
-    border_perimeter = cv2.arcLength(contours[0], True)
-    if lesion_area == 0:
-        irregularity = 0
-    else:
-        irregularity = (border_perimeter ** 2) / (4 * np.pi * lesion_area)
-
-    return irregularity
-
-
-
-def get_compactness(mask):
-
-    """ To calculate the compactness of a binary region in an image, which is a measure of how closely packed
-    or circular the shape is. A value closer to 1 suggests a shape that is more circular, while higher values
-    indicate more irregular or elongated shapes."""
-
-    # mask = color.rgb2gray(mask)
-    area = np.sum(mask)
-
-    struct_el = morphology.disk(3)
-    mask_eroded = morphology.binary_erosion(mask, struct_el)
-    perimeter = np.sum(mask - mask_eroded)
-
-    return perimeter**2 / (4 * np.pi * area)
-
-
-
-"""Literally just returns the geometrical midpoint of the image in the format [row col]"""
-def find_midpoint_v1(image):
-    
-    row_mid = image.shape[0] / 2
-    col_mid = image.shape[1] / 2
-    return row_mid, col_mid
-
-
-
-
-def slic_segmentation(image, mask, n_segments = 50, compactness = 0.1):
-        
-    '''The SLIC function divides the grayscale mask into n different segments based on the input, each segment treated as a superpixel instead of treating each
-    single pixel individually, which reduces complexity. The function adjusts the shape and color balance of each superpixel based on the compactness input (
-    the higher the value, the more compact and less flexible each superpixel shape is). Each superpixel is then given an integer label and the function returns 
-    a Numpy array that acts as a map for the superpixels, each value in the array being the label of that superpixel. This allows analysis of larger regions of the 
-    image separately, instead of single pixels.'''
-
-    slic_segments = slic(image,
-                    n_segments = n_segments,
-                    compactness = compactness,
-                    sigma = 1,
-                    mask = mask,
-                    start_label = 1,
-                    channel_axis = 2)
-
-    return slic_segments
-
-
-
-
 def compactness_score(image: Image)->float:
-    """Input mask where white is 1 and black is 0, returns compactness score, by formula 1-(4*pi*area)/(perimeter^2). Higher means more compact"""
+    """Computes compactness score of binary mask by formula (4*pi*area)/(perimeter^2).
 
+    Higher means more compact, closer to a circle.
+
+    Parameters
+    ----------
+    image : Image
+        Image object
+
+    Returns
+    -------
+    float
+        Compactness of the binary mask
+    """
     mask = image.mask_cropped
     A = np.sum(mask) # calculates the area of the mask - 1 where white, 0 where black, sum is number of white pixels in mask - lession
 
@@ -99,21 +25,3 @@ def compactness_score(image: Image)->float:
     compactness = (4*np.pi*A)/(l**2) # calculate compactness by formula
     
     return compactness
-
-
-
-
-def convexity_score(mask):
-    """Input a mask. Returns convexity between 0 and 1, 1 being perfectly convex - circle or elipsis, 0 completely irregular."""
-
-    coords = np.transpose(np.nonzero(mask)) # get a vertical array of all the coordinates of nonzero values in mask
-
-    hull = ConvexHull(coords) # Calculate a ConvexHull - the smallest convex polygon that encompases all the points
-
-    lesion_area = np.count_nonzero(mask)
-
-    convex_hull_area = hull.volume + hull.area # hull.volume is the area of the hull and hull.area is the perimiter of the hull because input points are 2D
-
-    convexity = lesion_area / convex_hull_area # compare the area of the lession with the area of the convex hull
-
-    return convexity # should be 0 to 1, 1 being perfectly convex - circle or elipsis, 0 completely irregular 
