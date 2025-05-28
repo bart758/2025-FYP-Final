@@ -3,7 +3,7 @@ from collections.abc import Callable
 from util.progressbar import progressbar
 from util.hair_feature_util import hair_import
 from .Feature_F import hair_ratio
-from .image import Image
+from .image import Image, importImages
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]], hair_csv_path: str = './norm_region_hair_amount.csv') -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
@@ -45,7 +45,24 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
                 counter += 1
                 print(e)
                 
+        features_df.loc[i_image, "diagnostic"] = image.metadata["diagnostic"]
         features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
 
     print(f"There was an error proccessing {counter} images.")
     return features_df
+
+def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features: list[Callable[[Image], float]], multiple: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    try:
+        data_df = pd.read_csv(csv_path).dropna()
+    except FileNotFoundError:
+        images: list[Image] = importImages(images_path, metadata_path)
+        data_df = extractFeatures(images, features)
+        data_df.to_csv(csv_path, index=False)
+        data_df = pd.read_csv(csv_path).dropna()
+
+    # select only the baseline features
+    baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
+    x_all = data_df[baseline_feats]
+    y_all = data_df["diagnostic"] if multiple else data_df["true_melanoma"]
+
+    return x_all, y_all, data_df

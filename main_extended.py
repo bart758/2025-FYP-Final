@@ -1,92 +1,16 @@
-# def ABCfeatures(images: list[Image]) -> pd.DataFrame:
-#     """Extracts features from list of images and saves into dataframe.
-
-#     Args:
-#         images (list[Image]): list of Image objects
-
-#     Returns:
-#         pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | "feat_C" | "true_melanoma"
-#     """
-#     features_df = pd.DataFrame(columns=["patient_id", "feat_A", "feat_B", "feat_C", "true_melanoma"])
-
-#     for i, image in enumerate(progressbar(sorted(images))):
-#         features_df.loc[i, "patient_id"] = image
-#         try:
-#             features_df.loc[i, "feat_A"] = get_asymmetry(image.mask)
-#             features_df.loc[i, "feat_B"] = convexity_score(image.mask)
-#             features_df.loc[i, "feat_C"] = get_multicolor_rate(image.color, image.mask, 15)
-#         except:
-#             pass
-#         features_df.loc[i, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
-
-#     return features_df.dropna()
-import matplotlib
-matplotlib.use('TkAgg')
-import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from collections.abc import Callable
-
-from util.progressbar import progressbar
-from util.image import Image, importImages
+from util.image import Image
 from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
 from util.Feature_D import find_max_diameter
 from util.Feature_E import is_growing
-from util.evaluator_util import ClassifierEvaluator
-from util.optimal_classifier_util import compare_classifiers
-from util.hair_feature_util import hair_import, hair_ratio
+from util.Feature_F import hair_ratio
+from util.extract_features import ImportFeatures
+from util.classifier_util import Classify
 
-def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]]) -> pd.DataFrame:
-    """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
-
-    Args:
-        images (list[Image]): list of Image objects
-        extraction_functions (list[Callable[..., float]]): List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
-
-    Returns:
-        pd.DataFrame: Columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
-    """
-
-    try:
-        hair_df = pd.read_csv(hair_csv_path).dropna()
-        hair_df.set_index('ImageID', inplace=True)
-    except FileNotFoundError:
-        hair_df = hair_import(images, hair_csv_path)
-
-    features_df = pd.DataFrame(columns=["patient_id", "true_melanoma"])
-    counter = 0 
-
-    for i_image, image in progressbar(list(enumerate(images)), "Proccesing features: "):
-        features_df.loc[i_image, "patient_id"] = image
-
-        for i_func, func in enumerate(extraction_functions):
-            variables = list()
-            arg_count = func.__code__.co_argcount
-            args = func.__code__.co_varnames[0: arg_count]
-
-            for arg in args:
-                if arg == "image":
-                    variables.append(image)
-                if arg == "hair_df":
-                    variables.append(hair_df)
-
-            try:
-                features_df.loc[i_image, f"feat_{chr(i_func+65)}"] = func(*tuple(variables))
-            except (FileNotFoundError, ValueError) as e: # if mask does not exist in masks folder
-                counter += 1
-                print(e)
-                
-        features_df.loc[i_image, "diagnostic"] = image.metadata["diagnostic"]
-        features_df.loc[i_image, "true_melanoma"] = True if image.metadata["diagnostic"] == "MEL" else False
-
-    print(f"There was an error proccessing {counter} images.")
-    return features_df
-            
-
-def main(csv_path: str, save_path: str, features: list[Callable[..., float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", hair_csv_path: str = './norm_region_hair_amount.csv', multiple:bool = False, testing: bool = False):
+def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", 
+         hair_csv_path: str = './norm_region_hair_amount.csv', multiple:bool = False, testing: bool = False, plots: bool= False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -98,63 +22,37 @@ def main(csv_path: str, save_path: str, features: list[Callable[..., float]], im
     and saves a csv with the results.
 
     Args:
-        csv_path (str): path to the features csv with columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
-        save_path (str): save path for result csv with columns image_id | true_label | predicted_label | predicted_probability
-        features (list[Callable[..., float]]): List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
-        images_path (str, optional): directory of images to be used in case the features csv does not exist. Defaults to "./data".
-        metadata_path (str, optional): path to metadata.csv from original dataset. Defaults to "./metadata.csv".
         testing (bool, optional): displays performance of several classifiers over the data. Defaults to False.
+    Parameters
+    ----------
+    csv_path : str
+        Path to the features csv with columns "patient_id" | "feat_A" | "feat_B" | ... | "feat_n" | "true_melanoma"
+    save_path : str
+        Save path for result csv with columns image_id | true_label | predicted_label | predicted_probability
+    features : list[Callable[[Image], float]]
+        List of feature extraction functions, should be ordered as [feat_A, feat_B, ..., feat_n]
+    images_path : str, optional
+        Directory of images to be used in case the features csv does not exist, by default "./data"
+    metadata_path : str, optional
+        Path to metadata.csv from original dataset, by default "./metadata.csv"
+    hair_csv_path : str, optional
+        Path to csv of extracted hair ratios, by default './norm_region_hair_amount.csv'
+    multiple : bool, optional
+        True if multiple classification, by default False
+    testing : bool, optional
+        Run different splits of data through multiple classification algorithms and display plot of performance, by default False
+    plots : bool, optional
+        Performance plots for main classification, by default False
     """
 
-    # load dataset CSV file
-    try:
-        data_df = pd.read_csv(csv_path).dropna()
-    except FileNotFoundError:
-        images: list[Image] = importImages(images_path, metadata_path)
-        data_df = extractFeatures(images, features)
-        data_df.to_csv(csv_path, index=False)
-        data_df = pd.read_csv(csv_path).dropna()
+    x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, multiple)
 
-    # select only the baseline features
-    baseline_feats = [col for col in data_df.columns if col.startswith("feat_")]
-    x_all = data_df[baseline_feats]
-    y_all = data_df["diagnostic"] if multiple else data_df["true_melanoma"]
-
-
-    if testing:
-        compare_classifiers(x_all, y_all, n_iterations=30)
-    else:
-        # split the dataset into training and testing sets
-        stratification = None if multiple else y_all
-        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=stratification)
-
-        # train the classifier
-        clf = RandomForestClassifier(class_weight='balanced')  if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
-        clf.fit(x_train, y_train)
-
-        # test the trained classifier
-        probs = clf.predict_proba(x_test)[:, 1]
-
-        y_pred = clf.predict(x_test)
-
-        # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
-        evaluator.express()
-
-        # write test results to a CSV file
-        result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
-        result_df['true_label'] = y_test.values
-        result_df['predicted_label'] = y_pred
-        result_df['predicted_probability'] = probs
-        if multiple:
-            save_path = "result/result_extended_multi.csv"
-        result_df.to_csv(save_path, index=False)
-        print("Results saved to:", save_path)
+    Classify(x_all, y_all, save_path, data_df, multiple, plots, testing)
 
 
 if __name__ == "__main__":
     
-    features = [asymmetry, compactness_score, get_multicolor_rate, find_max_diameter, is_growing, hair_ratio]
+    features: list[Callable[[Image], float]] = [asymmetry, compactness_score, get_multicolor_rate, find_max_diameter, is_growing, hair_ratio]
     csv_path = "features_extended.csv"
     save_path = "result/result_extended.csv"
     hair_csv_path = "norm_region_hair_amount.csv"

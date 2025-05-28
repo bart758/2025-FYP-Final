@@ -38,7 +38,7 @@ def hair_import(images: list[Image], save_path: str, categorize: bool = False, c
 
     numbers = pd.DataFrame()
 
-    for i, image in progressbar(list(enumerate(images))):
+    for i, image in progressbar(list(enumerate(images)), "Computing hair ratios: "):
         numbers.loc[i, 'ImageID'] = f"{image}"
         numbers.loc[i, 'Ratio'] = get_hair_ratio(image)
         numbers.loc[i, 'Region'] = image.metadata['region']

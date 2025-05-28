@@ -12,30 +12,37 @@ from sklearn.metrics import recall_score
 from sklearn.base import clone
 from .evaluator_util import ClassifierEvaluator
 
-def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, plots: bool = False) -> LogisticRegression:
-    # split the dataset into training and testing sets
-    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=y_all)
+def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False, plots: bool = False, testing: bool= False) -> LogisticRegression:
+    
+    if testing:
+        compare_classifiers(x_all, y_all, n_iterations=30)
+    else:
+        # split the dataset into training and testing sets
+        stratification = None if multiple else y_all
+        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=0.2, random_state=42, stratify=stratification)
 
-    # train the classifier
-    clf = LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
-    clf.fit(x_train, y_train)
+        # train the classifier
+        clf = RandomForestClassifier(class_weight='balanced')  if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
+        clf.fit(x_train, y_train)
 
-    # test the trained classifier
-    probs = clf.predict_proba(x_test)[:, 1]
+        # test the trained classifier
+        probs = clf.predict_proba(x_test)[:, 1]
 
-    y_pred = clf.predict(x_test)
+        y_pred = clf.predict(x_test)
 
-    # evaluate the classifier
-    evaluator = ClassifierEvaluator(clf, x_test, y_test)
-    evaluator.express()
+        # evaluate the classifier
+        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
+        evaluator.express()
 
-    # write test results to a CSV file
-    result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
-    result_df['true_label'] = y_test.values
-    result_df['predicted_label'] = y_pred
-    result_df['predicted_probability'] = probs
-    result_df.to_csv(save_path, index=False)
-    print("Results saved to:", save_path)
+        # write test results to a CSV file
+        result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
+        result_df['true_label'] = y_test.values
+        result_df['predicted_label'] = y_pred
+        result_df['predicted_probability'] = probs
+        if multiple:
+            save_path = "result/result_extended_multi.csv"
+        result_df.to_csv(save_path, index=False)
+        print("Results saved to:", save_path)
 
     if plots:
         ce = ClassifierEvaluator(clf, x_test, y_test)
