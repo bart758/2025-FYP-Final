@@ -1,11 +1,11 @@
 from collections.abc import Callable
 from util.image import Image
-from util.Feature_A import asymmetry
-from util.Feature_B import compactness_score
-from util.Feature_C import get_multicolor_rate
-from util.Feature_D import find_max_diameter
-from util.Feature_E import is_growing
-from util.Feature_F import hair_ratio
+from util.feature_A import asymmetry
+from util.feature_B import compactness_score
+from util.feature_C import get_multicolor_rate
+from util.feature_D import find_max_diameter
+from util.feature_E import is_growing
+from util.feature_F import hair_ratio
 from util.extract_features import ImportFeatures
 from util.classifier import Classify
 

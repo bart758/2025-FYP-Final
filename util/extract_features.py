@@ -2,7 +2,7 @@ import pandas as pd
 from collections.abc import Callable
 from util.progressbar import progressbar
 from util.hair_feature_util import hair_import
-from .Feature_F import hair_ratio
+from .feature_F import hair_ratio
 from .image import Image, importImages
 
 def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]], hair_csv_path: str = './norm_region_hair_amount.csv') -> pd.DataFrame:
