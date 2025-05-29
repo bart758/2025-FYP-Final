@@ -14,9 +14,9 @@ def is_growing(image: Image) -> bool | None:
     bool | None
         True if "grow" true in metadata, False if false. None when Unknown.
     """
-    if image.metadata["grew"] == "True":
+    if image.metadata["grew"] == "TRUE":
         return True
-    elif image.metadata["grew"] == "False":
+    elif image.metadata["grew"] == "FALSE":
         return False
     else:
         return None

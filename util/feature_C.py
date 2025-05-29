@@ -23,7 +23,7 @@ def get_multicolor_rate(image: Image, n: int = 4) -> float:
         Normalized maximum distance between colors in lesion.
     """
     mask = image.mask_cropped
-    image = image.image_cropped
+    image = image.image_cropped/255
 
     col_list = image[mask != 0].reshape(-1, 3)
 
@@ -38,6 +38,6 @@ def get_multicolor_rate(image: Image, n: int = 4) -> float:
     max_dist = max(np.linalg.norm(np.array(c1) - np.array(c2)) for c1, c2 in combinations(centers, 2))
 
     # Normalize RGB values to [0, 1]
-    normalized = round(max_dist / np.sqrt(3), 4)
+    normalized = max_dist / np.sqrt(3)
 
     return normalized

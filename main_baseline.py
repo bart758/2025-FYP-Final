@@ -53,5 +53,6 @@ if __name__ == "__main__":
     csv_path = "features_baseline.csv"
     save_path = "result/result_baseline.csv"
     hair_csv_path = "norm_region_hair_amount.csv"
+    metadata_path = "dataset.csv"
 
-    main(csv_path, save_path, features)
+    main(csv_path, save_path, features, metadata_path=metadata_path)
