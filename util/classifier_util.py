@@ -13,7 +13,7 @@ from sklearn.base import clone
 from .evaluator_util import ClassifierEvaluator
 
 
-def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False, extended: bool = False,  
+def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False,
              plots: bool = False, testing: bool = False) -> LogisticRegression | RandomForestClassifier:
     """Run Logistic Regression or Random Forest classification depending on "multiple" and save results.
 

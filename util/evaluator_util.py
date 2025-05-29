@@ -91,7 +91,7 @@ class ClassifierEvaluator:
         plt.xlabel("Predicted")
         plt.ylabel("True")
         plt.tight_layout()
-        # plt.savefig('plots/confusion_final_final.pdf') # save figure separately
+        # plt.savefig('plots/confusion_balanced.pdf') # save figure separately
 
     def _plot_roc_curve(self):
         fpr, tpr, _ = roc_curve(self.y_test, self.y_prob)
