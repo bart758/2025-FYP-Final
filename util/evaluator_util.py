@@ -11,6 +11,7 @@ import cv2
 import umap
 from sklearn.model_selection import train_test_split
 import os
+from scipy.stats import ttest_ind
 from .img_util import get_hair_ratio
 from .image import readImageFile
 from .progressbar import progressbar
@@ -339,3 +340,28 @@ def PlotProbability_vs_FeatureSpace():
     plt.ylabel('Melanoma Probability')
     plt.title('UMAP of Baseline Model')
     plt.savefig("plots/007-UMAP-Baseline_and_extended-model.pdf", bbox_inches='tight')
+
+def MeanDifferenceSignificance(feature_csv: str = "features_extended.csv"):
+
+    data = pd.read_csv(feature_csv).set_index("patient_id").drop("diagnostic", axis=1).dropna()
+    summary = data.groupby(by="true_melanoma").agg(["count", "mean", "std"])
+
+    columns = pd.MultiIndex.from_tuples([("Mean", "MEL"), ("Mean", "NO-MEL"), ("Std", "MEL"), ("Std", "NO-MEL"),  ("Mean", "Difference"),("t-Test", "t-stat"), ("t-Test", "p-value")])
+
+    res = pd.DataFrame(index=["feat_A", "feat_B", "feat_C", "feat_D", "feat_E", "feat_F"], 
+                    columns=columns, dtype=float)
+
+    data["feat_E"]= data["feat_E"].astype("int8")
+    for letter in "ABCDEF":
+        res.loc[f"feat_{letter}", ("Mean", "MEL")] = summary.loc[True, (f"feat_{letter}", 'mean')]
+        res.loc[f"feat_{letter}", ("Std", "MEL")] = summary.loc[True, (f"feat_{letter}", 'std')]
+        res.loc[f"feat_{letter}", ("Mean", "NO-MEL")] = summary.loc[False, (f"feat_{letter}", 'mean')]
+        res.loc[f"feat_{letter}", ("Std", "NO-MEL")] = summary.loc[False, (f"feat_{letter}", 'std')]
+        res.loc[f"feat_{letter}", ("t-Test", "t-stat")], res.loc[f"feat_{letter}", ("t-Test", "p-value")]  = ttest_ind(data.loc[data["true_melanoma"]==True, f"feat_{letter}"], data.loc[data["true_melanoma"]==False, f"feat_{letter}"], equal_var=False)
+
+    res[("Mean", "Difference")] = res[("Mean", "MEL")] - res[("Mean", "NO-MEL")]
+
+    res[[("Mean", "MEL"), ("Mean", "NO-MEL"), ("Mean", "Difference"), ("t-Test", "p-value")]].to_latex("tables/000-Mean-Difference.tex", float_format="%.3f",multicolumn_format="l", 
+                                        caption="Results from t-test for Mean Difference between Melanoma and Non-Melanoma lesions", label="tab:Mean-Difference-Tests", position="H")
+
+    return res
