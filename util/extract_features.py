@@ -5,7 +5,7 @@ from util.hair_feature_util import hair_import
 from .feature_F import hair_ratio
 from .image import Image, importImages
 
-def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]], hair_csv_path: str = './norm_region_hair_amount.csv') -> pd.DataFrame:
+def extractFeatures(images: list[Image], extraction_functions: list[Callable[..., float]], hair_csv_path: str | None = None) -> pd.DataFrame:
     """Extracts features from list of images using funtions from extraction_functions list and saves them into a dataframe.
 
     Args:
@@ -17,8 +17,11 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     """
     if hair_ratio in extraction_functions:
         try:
-            hair_df = pd.read_csv(hair_csv_path).dropna()
-            hair_df.set_index('ImageID', inplace=True)
+            if hair_csv_path is not None:
+                hair_df = pd.read_csv(hair_csv_path).dropna()
+                hair_df.set_index('ImageID', inplace=True)
+            else:
+                raise FileNotFoundError
         except FileNotFoundError:
             hair_df = hair_import(images, hair_csv_path)
 
@@ -51,7 +54,7 @@ def extractFeatures(images: list[Image], extraction_functions: list[Callable[...
     print(f"There was an error proccessing {counter} images.")
     return features_df
 
-def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features: list[Callable[[Image], float]], 
+def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features: list[Callable[[Image], float]], masks_path: str = "masks/",
                    hair_csv_path: str = './norm_region_hair_amount.csv', multiple: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Loads or extracts features.
 
@@ -80,7 +83,7 @@ def ImportFeatures(csv_path: str, images_path: str, metadata_path: str, features
     try:
         data_df = pd.read_csv(csv_path).dropna()
     except FileNotFoundError:
-        images: list[Image] = importImages(images_path, metadata_path)
+        images: list[Image] = importImages(images_path, metadata_path, masks_path)
         data_df = extractFeatures(images, features, hair_csv_path)
         data_df.to_csv(csv_path, index=False)
         data_df = pd.read_csv(csv_path).dropna()

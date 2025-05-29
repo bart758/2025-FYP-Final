@@ -7,10 +7,25 @@ from util.feature_D import find_max_diameter
 from util.feature_E import is_growing
 from util.feature_F import hair_ratio
 from util.extract_features import ImportFeatures
-from util.classifier import Classify
+from util.classifier import Classify, Predict
+
+""" To run the program 2 folders are required in the project folder:
+    -data- containing the dataset of images
+    -masks- containing all the lesion masks
+    the program will use these files to extract the features and save them to two csv
+    files- one for baseline model, and a second one for the extended one.
+    The models will learn on the features in their respective csv files if they exist.
+    If they don't exist, as is intended at the start, they will be created from the 
+    images and masks in the data and masks folder.
+    To run the model on new images, the paths to the new images have to be provied in
+    the parameters at the bottom of the main file. The program will output the preformance 
+    parameters of the classification of the new images.
+    The actual probabilities will be saved in the result/new_baseline.csv and result/new_extended.csv
+"""
 
 def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", 
-         hair_csv_path: str = './norm_region_hair_amount.csv', multiple:bool = False, testing: bool = False, plots: bool= False):
+         hair_csv_path: str = './norm_region_hair_amount.csv', new_images: str | None = None, new_masks: str | None = None, new_dataset: str | None = None, 
+         multiple:bool = False, testing: bool = False, plots: bool= False):
     """Main function for image clasification.
 
     Imports features csv if it exists, if it does not exist uses images path 
@@ -37,6 +52,12 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
         Path to metadata.csv from original dataset, by default "./metadata.csv"
     hair_csv_path : str, optional
         Path to csv of extracted hair ratios, by default './norm_region_hair_amount.csv'
+    new_images : str | None, optional
+        Path to directory with images different than the training dataset, by default None
+    new_masks : str | None, optional
+        Path to directory with mask for images different than the training dataset, by default None
+    new_dataset : str | None, optional
+        Path to new dataset corresponding to images, must have grew, diameter_1, diameter_2, img_id, diagnostic, by default None
     multiple : bool, optional
         True if multiple classification, by default False
     testing : bool, optional
@@ -45,9 +66,13 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
         Performance plots for main classification, by default False
     """
 
-    x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, hair_csv_path, multiple)
-    print(y_all)
-    Classify(x_all, y_all, save_path, data_df, extended=True, multiple=multiple, plots=plots, testing=testing)
+    x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, hair_csv_path=hair_csv_path, multiple=multiple)
+
+    clf = Classify(x_all, y_all, save_path, data_df, extended=True, multiple=multiple, plots=plots, testing=testing, new_images=new_images)
+
+    if new_images is not None:
+        x_all, y_all, data_df = ImportFeatures("new_features_extended.csv", new_images, new_dataset, features, masks_path=new_masks, hair_csv_path="new_hair.csv", multiple=multiple)
+        Predict(clf, x_all ,y_all, data_df, "result/new_extended.csv", multiple=multiple, plots=plots, extended=True)
 
 if __name__ == "__main__":
     
@@ -56,6 +81,10 @@ if __name__ == "__main__":
     save_path = "result/result_extended.csv"
     hair_csv_path = "norm_region_hair_amount.csv"
     metadata_path = "dataset.csv"
+    new_dataset = None
+    new_images = None
+    new_masks = None
 
-    main(csv_path, save_path, features, metadata_path=metadata_path, hair_csv_path="norm_region_hair_amount.csv")
+    main(csv_path, save_path, features, metadata_path=metadata_path, hair_csv_path=hair_csv_path,
+          new_images=new_images, new_masks=new_masks, new_dataset=new_dataset)
 

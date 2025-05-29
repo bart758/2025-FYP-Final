@@ -277,7 +277,7 @@ class Image():
     def __repr__(self):
         return self.metadata.name
 
-def importImages(directory: str, metadata_path: str) -> list[Image]:
+def importImages(directory: str, metadata_path: str, masks_path: str = "masks/") -> list[Image]:
     """Import all image files from directory.
 
     Parameters
@@ -301,7 +301,7 @@ def importImages(directory: str, metadata_path: str) -> list[Image]:
     images: list[Image] = []
 
     for image_path in progressbar(file_list, "Loading images: ", 40):
-        images.append(Image(image_path))
+        images.append(Image(image_path, masks_path))
     print("All images loaded succesfuly") 
     
     return images

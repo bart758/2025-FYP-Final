@@ -14,7 +14,7 @@ from .evaluator_util import ClassifierEvaluator
 
 
 def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, extended:bool = False, multiple: bool = False,
-             plots: bool = False, testing: bool = False) -> LogisticRegression | RandomForestClassifier:
+             plots: bool = False, testing: bool = False, new_images: str | None = None) -> LogisticRegression | RandomForestClassifier:
     """Run Logistic Regression or Random Forest classification depending on "multiple" and save results.
 
     If "multiple" is True runs Random Forest multiple classification in an attempt to classify all diagnostics, 
@@ -53,30 +53,40 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         clf = RandomForestClassifier(class_weight='balanced') if multiple else LogisticRegression(max_iter=1000, verbose=0, class_weight='balanced', solver='liblinear', penalty='l1')
         clf.fit(x_train, y_train)
 
-        # test the trained classifier
-        probs = clf.predict_proba(x_test)[:, 1]
+    
+        if new_images is not None: # If training for other data than the original dataset
+            clf.fit(x_all, y_all)
+        else:
+            Predict(clf,x_test,y_test,data_df,save_path,multiple,plots,extended)
 
-        y_pred = clf.predict(x_test)
+        return clf
+    
+def Predict(clf: LogisticRegression | RandomForestClassifier, x_data: pd.DataFrame, y_data: pd.DataFrame, data_df: pd.DataFrame ,save_path: str,
+            multiple: bool = False, plots: bool = False, extended: bool = False):
+    # test the trained classifier
+        probs = clf.predict_proba(x_data)[:, 1]
+
+        y_pred = clf.predict(x_data)
 
         # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
+        evaluator = ClassifierEvaluator(clf, x_data, y_data, multiple=multiple)
         if plots:
             evaluator.visual()
         else:
             evaluator.express()
 
         # write test results to a CSV file
-        result_df = data_df.loc[x_test.index, ["patient_id"]].copy()
-        result_df['true_label'] = y_test.values
+        result_df = data_df.loc[x_data.index, ["patient_id"]].copy()
+        result_df['true_label'] = y_data.values
         result_df['predicted_label'] = y_pred
         result_df['predicted_probability'] = probs
         save_path_part = "extended" if extended else "baseline"
+        new_save_path = "new_extended" if extended else "new_baseline"
+        save_path_part = new_save_path if "new" in save_path else save_path_part
         if multiple:
             save_path = f"result/result_{save_path_part}_multi.csv"
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
-
-        return clf
 
 def compare_classifiers(X, y, n_iterations=100, test_size=0.2, random_state=42):
     '''
