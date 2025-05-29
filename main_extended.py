@@ -47,8 +47,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
 
     x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, hair_csv_path, multiple)
 
-    Classify(x_all, y_all, save_path, data_df, multiple=False, plots=False, testing=False)
-
+    Classify(x_all, y_all, save_path, data_df, extended=True, multiple=multiple, plots=plots, testing=testing)
 
 if __name__ == "__main__":
     
@@ -57,5 +56,5 @@ if __name__ == "__main__":
     save_path = "result/result_extended.csv"
     hair_csv_path = "norm_region_hair_amount.csv"
 
-    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv")
+    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv", multiple=True)
 

@@ -51,7 +51,7 @@ class ClassifierEvaluator:
         evaluator.evaluate(mode="express")  | Prints metrics to terminal
         evaluator.evaluate(mode="visual")   | Displays evaluation plots
     '''
-    def __init__(self, clf, x_test, y_test, multiple = False, extended = False):
+    def __init__(self, clf, x_test, y_test, multiple = False):
         self.clf = clf
         self.x_test = x_test
         self.y_test = y_test
@@ -59,7 +59,7 @@ class ClassifierEvaluator:
         self.roc_avrage = "weighted" if multiple else "macro"
         self.multi_class = "ovo" if multiple else "raise"
         self.y_pred = clf.predict(x_test)
-        self.y_prob = clf.predict_proba(x_test)[:, 1] if not (multiple and extended) else clf.predict_proba(x_test)
+        self.y_prob = clf.predict_proba(x_test)[:, 1] if not multiple else clf.predict_proba(x_test)
         self.metrics = {}
 
     def compute_metrics(self):

@@ -13,7 +13,7 @@ from sklearn.base import clone
 from .evaluator_util import ClassifierEvaluator
 
 
-def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, multiple: bool = False,
+def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: pd.DataFrame, extended:bool = False, multiple: bool = False,
              plots: bool = False, testing: bool = False) -> LogisticRegression | RandomForestClassifier:
     """Run Logistic Regression or Random Forest classification depending on "multiple" and save results.
 
@@ -59,7 +59,7 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         y_pred = clf.predict(x_test)
 
         # evaluate the classifier
-        evaluator = ClassifierEvaluator(clf, x_test, y_test)
+        evaluator = ClassifierEvaluator(clf, x_test, y_test, multiple=multiple)
         if plots:
             evaluator.visual()
         else:
@@ -70,8 +70,9 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         result_df['true_label'] = y_test.values
         result_df['predicted_label'] = y_pred
         result_df['predicted_probability'] = probs
+        save_path_part = "extended" if extended else "baseline"
         if multiple:
-            save_path = "result/result_extended_multi.csv"
+            save_path = f"result/result_{save_path_part}_multi.csv"
         result_df.to_csv(save_path, index=False)
         print("Results saved to:", save_path)
 

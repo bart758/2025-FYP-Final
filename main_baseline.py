@@ -42,9 +42,9 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
         Performance plots for main classification, by default False
     """
 
-    x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, multiple)
+    x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, multiple=multiple)
 
-    Classify(x_all, y_all, save_path, data_df, multiple, plots, testing)
+    Classify(x_all, y_all, save_path, data_df, multiple=multiple, plots = plots, testing=testing)
 
 
 if __name__ == "__main__":
