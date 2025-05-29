@@ -56,5 +56,5 @@ if __name__ == "__main__":
     save_path = "result/result_extended.csv"
     hair_csv_path = "norm_region_hair_amount.csv"
 
-    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv", multiple=True)
+    main(csv_path, save_path, features, hair_csv_path="norm_region_hair_amount.csv")
 
