@@ -3,7 +3,7 @@ import numpy as np
 from .image import Image
 
 def find_midpoint_v1(image: np.ndarray) -> tuple[float, float]:
-    """Finds midpoint in image
+    """Finds midpoint in image.
 
     Parameters
     ----------

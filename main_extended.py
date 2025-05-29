@@ -7,7 +7,7 @@ from util.Feature_D import find_max_diameter
 from util.Feature_E import is_growing
 from util.Feature_F import hair_ratio
 from util.extract_features import ImportFeatures
-from util.classifier_util import Classify
+from util.classifier import Classify
 
 def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", 
          hair_csv_path: str = './norm_region_hair_amount.csv', multiple:bool = False, testing: bool = False, plots: bool= False):
@@ -47,7 +47,7 @@ def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]]
 
     x_all, y_all, data_df = ImportFeatures(csv_path, images_path, metadata_path, features, hair_csv_path, multiple)
 
-    Classify(x_all, y_all, save_path, data_df, multiple=False, plots=True, testing=False)
+    Classify(x_all, y_all, save_path, data_df, multiple=False, plots=False, testing=False)
 
 
 if __name__ == "__main__":

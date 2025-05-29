@@ -133,7 +133,7 @@ def EvaluateHairFeature(n_rus: int = 100, plotting: bool = True, plot_save_path:
     plot_save_path : str, optional
         Save path for plot. Must be "save_path" withou slash at the end, by default "plots"
     hair_annotations_path : str, optional
-        Path to manual hair annotations from the mndatory exercise, must contain: img_id | Rating_1, by default "result/result.csv"
+        Path to manual hair annotations from the mandatory exercise, must contain: img_id | Rating_1, by default "result/result.csv"
     directory : str, optional
         Directory for images matching the dataset, by default "data/Ol_data/"
     config : list[int], optional

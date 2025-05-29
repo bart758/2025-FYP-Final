@@ -4,7 +4,7 @@ from util.Feature_A import asymmetry
 from util.Feature_B import compactness_score
 from util.Feature_C import get_multicolor_rate
 from util.extract_features import ImportFeatures
-from util.classifier_util import Classify
+from util.classifier import Classify
 
 def main(csv_path: str, save_path: str, features: list[Callable[[Image], float]], images_path: str = "./data", metadata_path: str = "./metadata.csv", 
          multiple:bool = False, testing: bool = False, plots: bool= False):

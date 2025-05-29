@@ -2,7 +2,7 @@ import numpy as np
 from .image import Image
 
 def is_growing(image: Image) -> bool | None:
-    """Gets "grow" from metadata
+    """Gets "grow" from metadata.
 
     Parameters
     ----------
@@ -12,7 +12,7 @@ def is_growing(image: Image) -> bool | None:
     Returns
     -------
     bool | None
-        True if "grow" true in metadata, False if falss. None when Unknown.
+        True if "grow" true in metadata, False if false. None when Unknown.
     """
     if image.metadata["grew"] == "True":
         return True

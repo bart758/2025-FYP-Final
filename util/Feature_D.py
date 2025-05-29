@@ -2,7 +2,7 @@ from .image import Image
 
 """There is no way PAT_456_888_961 is the largest one"""
 def find_max_diameter(image: Image)->float:
-    """Gets diameter from metadata
+    """Gets diameter of a lesion from the metadata.
 
     Parameters
     ----------

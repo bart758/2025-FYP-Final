@@ -32,8 +32,6 @@ def Classify(x_all: pd.DataFrame, y_all: pd.DataFrame, save_path: str, data_df: 
         All data from Feature import
     multiple : bool, optional
         Run multiple classification, by default False
-    extended : bool, optional
-        Running extended model, by default False
     plots : bool, optional
         Plot classifier performance, by default False
     testing : bool, optional

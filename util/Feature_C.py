@@ -30,7 +30,7 @@ def get_multicolor_rate(image: Image, n: int = 4) -> float:
     if len(col_list) < 2:
         return 0.0
 
-    # KMeans clustering
+    # KMeans clustering (used MinibatchKMeans since it is significantly faster)
     cluster = MiniBatchKMeans(n_clusters=n, n_init=10, random_state=0).fit(col_list)
     centers = cluster.cluster_centers_
 
